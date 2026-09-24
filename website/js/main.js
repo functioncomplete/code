@@ -97,9 +97,9 @@
     'ctr.u3t': 'State rental',
     'ctr.u3d': 'CSC state rent is priced per byte; long-idle state is recycled, with state-market subsidies for rent.',
     'ctr.statusH': 'Development status · v2 dual-primitive component kit',
-    'ctr.status1': 'M1 Container component deployed on Sepolia',
-    'ctr.status2': 'Demo container tokenId #1 minted; on-chain verification passed',
-    'ctr.status3': 'Upcoming milestones: M2 CSC → M3 proof market → M4 DSU → M5 gate engine → M6 hybrid mode → M7 cross-chain adapters.',
+    'ctr.status1': 'M1 Container · M2 CSC deployed on Sepolia',
+    'ctr.status2': 'Demo container tokenId #1 + CSC demo state on-chain; verification passed',
+    'ctr.status3': 'Upcoming milestones: M3 proof market → M4 DSU → M5 gate engine → M6 hybrid mode → M7 cross-chain adapters.',
 
     /* provable */
     'prv.eyebrow': 'Proof component',
