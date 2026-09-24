@@ -26,8 +26,23 @@ v2/
 ├── dsu-runtime/   DSU 运行时（Rust）
 ├── indexer/       事件索引器（借 1.0 扩展）
 ├── frontend/      前端（借 1.0 改造）
+├── website/       官网（v1.2 定位，白皮书 v1.2 为准）
 ├── deployments/   Sepolia 部署记录
 └── docs/          架构文档
+```
+
+### website 官网（v1.2）
+
+`website/` 为升级后的官网（**独立于 V1.0/website**，1.0 保留不动），内容以白皮书 v1.2 为准：
+
+- **定位**：技术组件套件（非 L2、非代币）+ 双原语（门级函数 + DSU）+ 五类组件
+- **无代币声明**：经济章节含反诈骗横幅（FCT 无代币/预售/空投）
+- **开发状态**：容器章节含 M1 已部署 Sepolia 的合约地址
+- 双语：HTML 内联中文 + JS EN 词典（137 键，已校验一一对应）
+- 白皮书下载链接指向 v1.2（`FCT-whitepaper-zh.md`）
+
+```bash
+cd website && python3 -m http.server 8770   # 本地预览
 ```
 
 ## 目标链

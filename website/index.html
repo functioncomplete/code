@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="zh" data-lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FunctionComplete (FCT) — 技术组件套件 · 门级函数 + 状态容器</title>
+<meta name="description" content="FCT 不是一条链、不是一个代币、不是 L2 —— 它是一套链上计算与状态管理技术组件：以 NAND + LATCH 门级函数承担计算，以容器 + CSC 承担状态，由 Ethercoin 团队构建。任何想提供可靠链上计算服务的网络的理想组件。">
+<meta name="theme-color" content="#070b12">
+<link rel="stylesheet" href="css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23070b12'/><path d='M8 10h5l2 3-2 3H8z' fill='none' stroke='%2322d3ee' stroke-width='2'/><rect x='17' y='9' width='9' height='9' rx='2' fill='none' stroke='%2334d399' stroke-width='2'/><rect x='17' y='20' width='9' height='9' rx='2' fill='none' stroke='%23a78bfa' stroke-width='2'/></svg>">
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <div class="nav-inner">
+    <a class="brand" href="#top" aria-label="FunctionComplete">
+      <svg class="brand-mark" viewBox="0 0 40 28" aria-hidden="true">
+        <path d="M2 8h8l4 6-4 6H2z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="30" cy="14" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M14 14h9" stroke="currentColor" stroke-width="1.6"/>
+      </svg>
+      <span class="brand-text">Function<b>Complete</b></span>
+    </a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="#primitives" data-i18n="nav.primitives">双原语</a>
+      <a href="#components" data-i18n="nav.components">组件</a>
+      <a href="#container" data-i18n="nav.container">容器</a>
+      <a href="#provable" data-i18n="nav.provable">证明</a>
+      <a href="#economy" data-i18n="nav.economy">经济</a>
+      <a href="#roadmap" data-i18n="nav.roadmap">路线图</a>
+    </nav>
+    <div class="nav-actions">
+      <button class="lang-toggle" id="langToggle" type="button" aria-label="切换语言 / Switch language">
+        <span class="lang-zh">中</span><span class="lang-sep">/</span><span class="lang-en">EN</span>
+      </button>
+      <a class="btn btn-ghost" href="FCT-whitepaper-zh.md" data-wp download data-i18n="nav.whitepaper">白皮书</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-bg" aria-hidden="true">
+    <svg class="circuit" viewBox="0 0 1200 600" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+          <circle cx="1.5" cy="1.5" r="1.1" fill="#1b2536"/>
+        </pattern>
+        <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#070b12" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#070b12" stop-opacity="1"/>
+        </linearGradient>
+      </defs>
+      <rect width="1200" height="600" fill="url(#dots)"/>
+      <g class="trace">
+        <path d="M-20 120 H180 L220 160 H420" />
+        <path d="M-20 300 H120 L160 260 H360 L400 300 H560" />
+        <path d="M-20 470 H240 L280 430 H500" />
+        <path d="M1220 180 H1000 L960 220 H760" />
+        <path d="M1220 380 H1060 L1020 340 H820 L780 380 H640" />
+        <path d="M1220 520 H980 L940 480 H700" />
+      </g>
+      <g class="nodes">
+        <circle cx="420" cy="160" r="4"/><circle cx="560" cy="300" r="4"/>
+        <circle cx="500" cy="430" r="4"/><circle cx="760" cy="220" r="4"/>
+        <circle cx="640" cy="380" r="4"/><circle cx="700" cy="480" r="4"/>
+      </g>
+      <rect width="1200" height="600" fill="url(#fade)"/>
+    </svg>
+  </div>
+
+  <div class="wrap hero-inner">
+    <div class="badge reveal">
+      <span class="pulse" aria-hidden="true"></span>
+      <span data-i18n="hero.badge">FCT v2 · 技术组件套件 · 不是 L2，不是代币</span>
+    </div>
+
+    <h1 class="reveal">
+      <span data-i18n="hero.h1a">门级函数 + 状态容器，</span>
+      <em data-i18n="hero.h1b">计算物理上无法作恶</em>
+      <span data-i18n="hero.h1c">的技术组件套件</span>
+    </h1>
+
+    <p class="lead reveal" data-i18n="hero.lead">
+      FCT 不是一条链、不是一个代币、不是 L2 —— 它是一套链上计算与状态管理技术组件：
+      以 NAND + LATCH 门级函数承担计算，以容器 + CSC 承担状态，由 Ethercoin 团队构建。
+      任何想提供可靠链上计算服务的网络，都能集成 FCT 组件。
+    </p>
+
+    <div class="hero-cta reveal">
+      <a class="btn btn-primary" href="#components" data-i18n="hero.cta1">查看组件</a>
+      <a class="btn btn-ghost" href="FCT-whitepaper-zh.md" data-wp download data-i18n="hero.cta2">阅读白皮书 v1.2</a>
+    </div>
+
+    <ul class="hero-stats reveal">
+      <li><b>2</b><span data-i18n="hero.stat1">计算原语（门级函数 + DSU）</span></li>
+      <li><b>5</b><span data-i18n="hero.stat2">类技术组件</span></li>
+      <li><b>0</b><span data-i18n="hero.stat3">代币（统一 ETHER 结算）</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ PRIMITIVES ============ -->
+<section class="section" id="primitives">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="prim.eyebrow">核心概念</p>
+    <h2 class="reveal" data-i18n="prim.h2">双计算原语</h2>
+    <p class="section-lead reveal" data-i18n="prim.lead">
+      FCT 仅依赖两种计算原语构建所有能力：<strong>门级函数</strong>承担计算，<strong>DSU</strong> 承担状态。
+      所有组件、所有证明路径、所有应用场景，都建立在这两个原语之上。
+    </p>
+
+    <div class="gates">
+      <figure class="gate reveal">
+        <svg viewBox="0 0 220 120" aria-hidden="true">
+          <path d="M20 40h40M20 80h40" class="g-wire"/>
+          <path d="M60 28h34c30 0 54 14 54 32s-24 32-54 32H60z" class="g-body"/>
+          <circle cx="152" cy="60" r="6" class="g-bubble"/>
+          <path d="M158 60h42" class="g-wire"/>
+          <text x="76" y="66" class="g-text">NAND</text>
+          <text x="20" y="24" class="g-pin">A</text>
+          <text x="20" y="100" class="g-pin">B</text>
+          <text x="192" y="54" class="g-pin">Y</text>
+        </svg>
+        <figcaption>
+          <b data-i18n="prim.fnT">门级函数</b>
+          <span data-i18n="prim.fnD">NAND 门逻辑完备 + LATCH 存储状态，可表达任意时序逻辑。无副作用、确定性、可组合 —— 物理上无法作恶。</span>
+        </figcaption>
+      </figure>
+
+      <figure class="gate reveal">
+        <svg viewBox="0 0 220 120" aria-hidden="true">
+          <rect x="50" y="18" width="120" height="84" rx="6" class="g-body2"/>
+          <path d="M20 60h30" class="g-wire"/>
+          <path d="M170 60h30" class="g-wire"/>
+          <text x="110" y="42" class="g-text" text-anchor="middle">DSU</text>
+          <text x="110" y="62" class="g-sub" text-anchor="middle">数据 · 证明 · 决议</text>
+          <text x="110" y="82" class="g-sub" text-anchor="middle">抽象状态接口</text>
+          <text x="20" y="52" class="g-pin">in</text>
+          <text x="180" y="52" class="g-pin">out</text>
+        </svg>
+        <figcaption>
+          <b data-i18n="prim.dsuT">DSU · 统一状态接口</b>
+          <span data-i18n="prim.dsuD">数据恒定、证明清单、决议记录三表合一，任何状态客户端都可验证，无需信任中间人。</span>
+        </figcaption>
+      </figure>
+    </div>
+
+    <div class="table-wrap reveal">
+      <table class="data-table">
+        <caption class="sr-only" data-i18n="prim.tableCap">双原语的关键特性</caption>
+        <thead>
+          <tr>
+            <th data-i18n="prim.th1">原语</th>
+            <th data-i18n="prim.th2">特性</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="prim.p1k">门级函数</td><td data-i18n="prim.p1v">无副作用：无法调用外部合约，无法写入外部状态</td></tr>
+          <tr><td data-i18n="prim.p2k">门级函数</td><td data-i18n="prim.p2v">只读调用：不消耗 Gas，不产生交易</td></tr>
+          <tr><td data-i18n="prim.p3k">门级函数</td><td data-i18n="prim.p3v">确定性：相同输入与状态，总是相同输出</td></tr>
+          <tr><td data-i18n="prim.p4k">门级函数</td><td data-i18n="prim.p4v">可组合：一个函数可作为子模块被另一个函数引用，组合是结构性的</td></tr>
+          <tr><td data-i18n="prim.p5k">DSU</td><td data-i18n="prim.p5v">可验证性：数据、证明、决议由客户端直接验证，无需信任第三方</td></tr>
+          <tr><td data-i18n="prim.p6k">DSU</td><td data-i18n="prim.p6v">抽象性：不关心载体（链、链下存储、去中心化存储），只关心状态的可验证性</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ COMPONENTS ============ -->
+<section class="section section-alt" id="components">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="comp.eyebrow">技术组件</p>
+    <h2 class="reveal" data-i18n="comp.h2">五类链上技术组件</h2>
+    <p class="section-lead reveal" data-i18n="comp.lead">
+      FCT 的组件是<strong>协议无关</strong>的：它们不预设任何特定网络作为运行环境，而是通过适配器接入任意具备基础记账能力的网络。
+    </p>
+
+    <div class="grid grid-3">
+      <article class="card reveal">
+        <div class="card-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M6 16h7l4-7 4 14 4-7h3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        </div>
+        <h3 data-i18n="comp.c1t">执行 · Executable</h3>
+        <p data-i18n="comp.c1d">门级函数（NAND + LATCH）与 DSU 共同承担计算：函数定义逻辑，DSU 定义状态接口。</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 12h20M6 20h20M12 6v20" stroke="currentColor" stroke-width="1.2" opacity=".6"/></svg>
+        </div>
+        <h3 data-i18n="comp.c2t">状态 · State</h3>
+        <p data-i18n="comp.c2d">容器（Container）封装节点状态，CSC 压缩状态承诺，历史默克尔树 + 扩展默克尔树 + 状态租金。</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M16 4l11 6v12l-11 6-11-6V10z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 11v7M16 21v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <h3 data-i18n="comp.c3t">证明 · Provable</h3>
+        <p data-i18n="comp.c3d">授权可重放、ZK 证明、TEE 证明三种路径并存，用户按安全需求自由选择。</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 5v22M5 16h22" stroke="currentColor" stroke-width="1.2" opacity=".6"/><path d="M26 16c0 5-4.5 9-10 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/></svg>
+        </div>
+        <h3 data-i18n="comp.c4t">清算 · Liquidatable</h3>
+        <p data-i18n="comp.c4d">适配器负责跨链清算：状态根锚定 + 资产托管 + 最终仲裁，链的状态变化可被清算。</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><path d="M8 26V10l8-4 8 4v16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 17h8M12 21h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        </div>
+        <h3 data-i18n="comp.c5t">身份 · Identifiable</h3>
+        <p data-i18n="comp.c5d">函数 NFT 与容器 NFT：门票、版税登记、管理员身份三位一体，来源可追溯。</p>
+      </article>
+      <article class="card reveal">
+        <div class="card-ico" aria-hidden="true">
+          <svg viewBox="0 0 32 32"><rect x="4" y="4" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="18" y="4" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="18" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="18" y="18" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
+        </div>
+        <h3 data-i18n="comp.c6t">载体无关</h3>
+        <p data-i18n="comp.c6d">组件不依赖特定链，通过适配器接入 EVM、Solana、Cosmos、Move 与比特币 L2，逐链推进。</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONTAINER ============ -->
+<section class="section" id="container">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="ctr.eyebrow">状态组件</p>
+    <h2 class="reveal" data-i18n="ctr.h2">容器 Container —— 节点状态的"盒子"</h2>
+    <p class="section-lead reveal" data-i18n="ctr.lead">
+      容器装载节点的状态与资产，是网络中<strong>可转让、可授权</strong>的核心载体：
+      转移令牌即转移管理权，持有者获得节点的一切访问权。
+    </p>
+
+    <div class="grid grid-2">
+      <div class="check-list reveal">
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s1t">可转让</b><p data-i18n="ctr.s1d">一次性可转让令牌与不可转让令牌：转让令牌即转让容器所有权。</p></div></div>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s2t">资产装载</b><p data-i18n="ctr.s2d">天然装载 ETH、ERC-20、ERC-721 资产，作为节点的经济实体。</p></div></div>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s3t">accessToken 授权</b><p data-i18n="ctr.s3d">DSU 访问由 accessToken 控制，授权粒度灵活可撤销。</p></div></div>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s4t">私有状态承诺</b><p data-i18n="ctr.s4d">内部状态以承诺公开，细节对外保密，验证与隐私兼得。</p></div></div>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s5t">管理员联动</b><p data-i18n="ctr.s5d">容器的管理员跟随容器 NFT 的所有权 —— 谁持有 NFT，谁管理容器。</p></div></div>
+      </div>
+
+      <div class="paths reveal">
+        <h3 data-i18n="ctr.usesH">典型场景</h3>
+        <div class="path">
+          <span class="dot dot-tee" aria-hidden="true"></span>
+          <div><b data-i18n="ctr.u1t">AI 服务节点</b><span data-i18n="ctr.u1d">付费推理：调用方支付 ETHER，节点执行门级函数并返回结果，收入沉淀在容器中。</span></div>
+        </div>
+        <div class="path">
+          <span class="dot dot-zk" aria-hidden="true"></span>
+          <div><b data-i18n="ctr.u2t">资产托管</b><span data-i18n="ctr.u2d">容器作为托管实体装载资产，状态根锚定到清算链，随时可清算。</span></div>
+        </div>
+        <div class="path">
+          <span class="dot dot-op" aria-hidden="true"></span>
+          <div><b data-i18n="ctr.u3t">状态租用</b><span data-i18n="ctr.u3d">CSC 状态租金按字节计价，长期闲置被回收，状态市场提供租金补助。</span></div>
+        </div>
+
+        <div class="deploy-status reveal">
+          <h4 data-i18n="ctr.statusH">开发状态 · v2 双原语组件套件</h4>
+          <p><span class="status-pill status-live" data-i18n="ctr.status1">M1 容器组件已部署 Sepolia</span></p>
+          <ul class="deploy-list">
+            <li><code>ContainerNFT</code> <span class="addr">0x163C5A5Af93211FcdA4882A07cf0eeFb2eA53780</span></li>
+            <li><code>Container</code> <span class="addr">0xa71F56C1738Ff130378e26b8971131C3BA6E8485</span></li>
+            <li data-i18n="ctr.status2">演示容器 tokenId #1 已铸造，链上验证通过</li>
+          </ul>
+          <p class="paths-note" data-i18n="ctr.status3">后续里程碑：M2 CSC → M3 证明市场 → M4 DSU → M5 门级引擎 → M6 混合模式 → M7 跨链适配。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PROVABLE ============ -->
+<section class="section section-alt" id="provable">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="prv.eyebrow">证明组件</p>
+    <h2 class="reveal" data-i18n="prv.h2">证明市场 —— 计算可靠性的四条路径</h2>
+    <p class="section-lead reveal" data-i18n="prv.lead">
+      以往只有「信任网络」或「信任应用」两种选择。FCT 提供<strong>第四种</strong>：客户端可以直接验证计算，无需信任任何人；
+      需要更强保证时，可组合 ZK 或 TEE 证明。
+    </p>
+
+    <div class="table-wrap reveal">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th data-i18n="prv.th1">鉴权路径</th>
+            <th data-i18n="prv.th2">信任假设</th>
+            <th data-i18n="prv.th3">适用场景</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="prv.r1a">公开可重放</td><td data-i18n="prv.r1b">零信任（客户端重放验证）</td><td data-i18n="prv.r1c">公共函数、开源验证器</td></tr>
+          <tr><td data-i18n="prv.r2a">仅授权重放</td><td data-i18n="prv.r2b">持有 accessToken 即可验证</td><td data-i18n="prv.r2c">私有、受限状态</td></tr>
+          <tr><td data-i18n="prv.r3a">授权 ZK</td><td data-i18n="prv.r3b">信任密码学，链上验证证明</td><td data-i18n="prv.r3c">n 个被引用函数的聚合证明</td></tr>
+          <tr><td data-i18n="prv.r4a">授权 TEE</td><td data-i18n="prv.r4b">信任硬件制造商</td><td data-i18n="prv.r4c">高吞吐、低延迟计算网络</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="risk-note reveal">
+      <h3 data-i18n="prv.noteH">DSU 可验证性</h3>
+      <ul>
+        <li data-i18n="prv.note1">数据、证明、决议三表合一，任何客户端均可直接验证状态更新</li>
+        <li data-i18n="prv.note2">被引用的函数网络自行承担证明费用 —— 主叫方只付一次原函数调用费</li>
+        <li data-i18n="prv.note3">证明市场包含：重放市场、ZK 证明市场、TEE 证明市场，可证明逻辑互联</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ECONOMY ============ -->
+<section class="section" id="economy">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="eco.eyebrow">经济模型</p>
+    <h2 class="reveal" data-i18n="eco.h2">无代币 · 一切以 ETHER 结算</h2>
+    <p class="section-lead reveal" data-i18n="eco.lead">
+      FCT <strong>没有原生代币</strong>。它不发行、不预售、不空投任何资产 —— 经济媒介统一为 ETHER，
+      让组件的价值直接与链上资产绑定，不引入任何投机媒介。
+    </p>
+
+    <div class="grid grid-3">
+      <article class="card reveal">
+        <h3 data-i18n="eco.c1t">统一 ETHER 结算</h3>
+        <p data-i18n="eco.c1d">所有费用、版税、清算、租金的结算媒介都是 ETHER —— 无代币、无通胀、无投机。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="eco.c2t">组合版税</h3>
+        <p data-i18n="eco.c2d">门级函数被引用或组合时，创作者获得 ETHER 版税，从调用方支付的费用中分成。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="eco.c3t">费用自理</h3>
+        <p data-i18n="eco.c3d">被引用的函数网络自行承担证明费用，用户只需为自己的原函数调用付费。</p>
+      </article>
+    </div>
+
+    <div class="warn-banner reveal">
+      <strong data-i18n="eco.warnT">反诈骗声明</strong>
+      <p data-i18n="eco.warnD">FCT 无任何代币、预售或空投。任何声称是「FCT 代币」并出售、要求认购或空投的行为均为诈骗，请勿参与。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ROADMAP ============ -->
+<section class="section section-alt" id="roadmap">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="road.eyebrow">路线图</p>
+    <h2 class="reveal" data-i18n="road.h2">规范的逐步落地</h2>
+
+    <ol class="timeline">
+      <li class="reveal">
+        <span class="tl-dot" aria-hidden="true"></span>
+        <div class="tl-body">
+          <header><b data-i18n="road.s1">2026</b><span data-i18n="road.p1t">规范 + 双原语组件开发</span></header>
+          <ul>
+            <li data-i18n="road.p1a">发布 FCT v2 双原语规范与技术组件白皮书</li>
+            <li data-i18n="road.p1b">开发五类组件：容器、CSC、证明市场、DSU、门级引擎</li>
+            <li data-i18n="road.p1c">在 Sepolia 测试网完成组件级验证与集成测试</li>
+          </ul>
+          <p class="tl-value" data-i18n="road.p1v">当前进度：M1 容器组件已在 Sepolia 上线并验证；CSC / 证明市场 / DSU 开发中</p>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="tl-dot" aria-hidden="true"></span>
+        <div class="tl-body">
+          <header><b data-i18n="road.s2">2027</b><span data-i18n="road.p2t">以太坊适配器 + Robinhood Chain</span></header>
+          <ul>
+            <li data-i18n="road.p2a">以太坊适配器独立审计后部署主网清算/验证器</li>
+            <li data-i18n="road.p2b">Robinhood Chain（Arbitrum Orbit + Nitro）近乎零成本迁移</li>
+            <li data-i18n="road.p2c">约 100ms 出块，优先费完全转化为创作者版税</li>
+          </ul>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="tl-dot" aria-hidden="true"></span>
+        <div class="tl-body">
+          <header><b data-i18n="road.s3">2028</b><span data-i18n="road.p3t">Solana 适配器</span></header>
+          <ul>
+            <li data-i18n="road.p3a">门级函数编译为只读纯计算程序，Groth16 证明链上验证</li>
+            <li data-i18n="road.p3b">并行执行、亚秒级确认，验证成本恒定可预测</li>
+          </ul>
+        </div>
+      </li>
+      <li class="reveal">
+        <span class="tl-dot" aria-hidden="true"></span>
+        <div class="tl-body">
+          <header><b data-i18n="road.s4">2029</b><span data-i18n="road.p4t">多链清算自治</span></header>
+          <ul>
+            <li data-i18n="road.p4a">EVM、Solana、Cosmos、Move、比特币 L2 全适配</li>
+            <li data-i18n="road.p4b">跨链清算与版税结算自治运转</li>
+          </ul>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ CTA ============ -->
+<section class="cta">
+  <div class="wrap">
+    <h2 class="reveal" data-i18n="cta.h2">让链上计算成为架构的属性</h2>
+    <p class="reveal" data-i18n="cta.lead">
+      以门级函数承担计算，以容器承担状态，以 ETHER 结算价值 ——
+      FCT 是一套供任何网络集成的技术组件，安全由架构保证，而非应用层代码的质量。
+    </p>
+    <div class="hero-cta reveal">
+      <a class="btn btn-primary" href="FCT-whitepaper-zh.md" data-wp download data-i18n="cta.b1">下载白皮书 v1.2</a>
+      <a class="btn btn-ghost" href="#primitives" data-i18n="cta.b2">重看双原语</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="wrap footer-inner">
+    <div class="footer-brand">
+      <svg class="brand-mark" viewBox="0 0 40 28" aria-hidden="true">
+        <path d="M2 8h8l4 6-4 6H2z" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="30" cy="14" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/>
+        <path d="M14 14h9" stroke="currentColor" stroke-width="1.6"/>
+      </svg>
+      <span>Function<b>Complete</b></span>
+    </div>
+    <p class="footer-note" data-i18n="footer.note">技术组件白皮书 v1.2 · 双原语组件套件 · 无代币</p>
+    <nav class="footer-links" aria-label="页脚导航">
+      <a href="#primitives" data-i18n="nav.primitives">双原语</a>
+      <a href="#components" data-i18n="nav.components">组件</a>
+      <a href="#container" data-i18n="nav.container">容器</a>
+      <a href="#provable" data-i18n="nav.provable">证明</a>
+      <a href="#economy" data-i18n="nav.economy">经济</a>
+      <a href="FCT-whitepaper-zh.md" data-wp download data-i18n="nav.whitepaper">白皮书</a>
+    </nav>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
