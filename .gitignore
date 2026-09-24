@@ -1,0 +1,12 @@
+# Foundry
+contracts/lib/
+contracts/out/
+contracts/cache/
+# 部署记录（地址随部署变化）
+deployments/
+# Python
+__pycache__/
+*.pyc
+# 环境
+.env
+*.env
