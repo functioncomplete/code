@@ -97,9 +97,9 @@
     'ctr.u3t': 'State rental',
     'ctr.u3d': 'CSC state rent is priced per byte; long-idle state is recycled, with state-market subsidies for rent.',
     'ctr.statusH': 'Development status · v2 dual-primitive component kit',
-    'ctr.status1': 'M1 Container · M2 CSC deployed on Sepolia',
-    'ctr.status2': 'Demo container tokenId #1 + CSC demo state on-chain; verification passed',
-    'ctr.status3': 'Upcoming milestones: M3 proof market → M4 DSU → M5 gate engine → M6 hybrid mode → M7 cross-chain adapters.',
+    'ctr.status1': 'M1 Container · M2 CSC · M3 ProofMarket deployed on Sepolia',
+    'ctr.status2': 'Demo container tokenId #1 + CSC demo state on-chain; ProofMarket validator vote → reward / slash loop verified',
+    'ctr.status3': 'Upcoming milestones: M4 DSU → M5 gate engine → M6 hybrid mode → M7 cross-chain adapters.',
 
     /* provable */
     'prv.eyebrow': 'Proof component',
@@ -149,7 +149,7 @@
     'road.p1a': 'Publish the FCT v2 dual-primitive spec and technical component whitepaper',
     'road.p1b': 'Build the five component classes: Container, CSC, proof market, DSU, gate engine',
     'road.p1c': 'Complete component-level verification and integration tests on Sepolia',
-    'road.p1v': 'Current status: M1 Container live and verified on Sepolia; CSC / proof market / DSU in progress',
+    'road.p1v': 'Current status: M1 Container · M2 CSC · M3 ProofMarket live and verified on Sepolia; DSU / gate engine in progress',
     'road.p2t': 'Ethereum adapter + Robinhood Chain',
     'road.p2a': 'Ethereum adapter audited independently, then mainnet liquidation/verifier deployment',
     'road.p2b': 'Robinhood Chain (Arbitrum Orbit + Nitro) near-zero-cost migration',
