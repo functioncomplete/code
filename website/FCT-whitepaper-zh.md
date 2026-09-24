@@ -1,4 +1,4 @@
-# FunctionComplete 技术组件白皮书 v1.2
+# FunctionComplete (函数完备）技术组件白皮书 v1.2
 
 **由 Ethercoin 团队维护**  
 **独立网站：http://functioncomplete.com/**  
