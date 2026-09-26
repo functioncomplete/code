@@ -1,7 +1,9 @@
-# Foundry
-contracts/lib/
+# Foundry 产物
 contracts/out/
 contracts/cache/
+# 依赖 forge-std：以 git submodule 或 vendored 目录固定版本后应纳入版本控制。
+# 安装/固定：cd contracts && forge install foundry-rs/forge-std@v1.16.2 --no-commit
+# （此前 contracts/lib/ 被忽略 → 克隆后无法构建，供应链未固定。）
 # 部署记录（地址随部署变化）
 deployments/
 # Python
@@ -10,3 +12,5 @@ __pycache__/
 # 环境
 .env
 *.env
+# 内部部署脚本（含内网主机/用户名/SSH 密钥路径）
+deploy/

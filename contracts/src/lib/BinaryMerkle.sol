@@ -3,9 +3,9 @@ pragma solidity ^0.8.24;
 
 /// @title BinaryMerkle
 /// @notice Binary Merkle tree primitives for FCT CSC (Compressed State Commitment).
-///         Whitepaper v1.2 §4.2: binary trees have branches 4x shorter than
+///         Whitepaper v1.3 §5.2: binary trees have branches 4x shorter than
 ///         16-ary MPT, cutting verification bandwidth. Leaves are indexed by
-///         container ID (not address) per the v1.2 optimization.
+///         container ID (not address) per the v1.3 optimization.
 /// @dev Pure library: no storage. Hash is keccak256 double-hash (constant 64B
 ///      input via abi.encodePacked, unambiguous). Production may swap to
 ///      Poseidon/Blake3 on chains with precompiles; root math is identical.

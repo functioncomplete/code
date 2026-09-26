@@ -2,9 +2,9 @@
 pragma solidity ^0.8.24;
 
 /// @title PrimitiveSelector
-/// @notice FCT v2 M4 原语选择器（whitepaper §3.4.9, dev-plan §5.3）。
+/// @notice FCT v2 M4 原语选择器（whitepaper §4.3.4, dev-plan §5.3）。
 ///         容器/目标链按场景需求选择：门级函数 / DSU / 混合模式。
-///         决策规则表（白皮书 §3.4.9 场景 → 原语）编码为确定性纯函数。
+///         决策规则表（白皮书 §4.3.4 场景 → 原语）编码为确定性纯函数。
 contract PrimitiveSelector {
     enum Primitive { GATE, DSU, HYBRID }
 
@@ -21,7 +21,7 @@ contract PrimitiveSelector {
         bytes32 reason; // 规则标签哈希（off-chain 解析）
     }
 
-    /// @notice 决策规则表（白皮书 §3.4.9）：
+    /// @notice 决策规则表（白皮书 §4.3.4）：
     ///   formal || xchain || !high && !gov        → GATE   （极致安全/跨链身份/公共函数库）
     ///   gov && (formal || perf)                  → HYBRID （RWA 合规、AI Agent、混合场景）
     ///   highPerf && gov                          → HYBRID （门级身份 + DSU 执行）
@@ -34,7 +34,7 @@ contract PrimitiveSelector {
         bool xchain = r.needCrossChainId;
 
         if (gov && (formal || perf)) {
-            // 混合：门级验证锚 + DSU 执行（whitepaper §3.4.10）
+            // 混合：门级验证锚 + DSU 执行（whitepaper §4.3.3）
             rec.primitive = Primitive.HYBRID;
             rec.confidence = 100;
             rec.reason = keccak256("RWA-AI-hybrid");
@@ -66,7 +66,7 @@ contract PrimitiveSelector {
         return rec;
     }
 
-    /// @notice 白皮书 §3.4.9 决策规则表的规范样本（用于 off-chain 对照测试）。
+    /// @notice 白皮书 §4.3.4 决策规则表的规范样本（用于 off-chain 对照测试）。
     function ruleTableSample(uint8 idx) external pure returns (Requirements memory r, Primitive expected) {
         if (idx == 0) {
             // AI 推理 → DSU

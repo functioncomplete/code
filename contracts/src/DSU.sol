@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /// @title DSU
-/// @notice FCT v2 M4 领域专用执行单元（DSU）登记与管理（whitepaper §3.2, dev-plan §5.2）。
+/// @notice FCT v2 M4 领域专用执行单元（DSU）登记与管理（whitepaper v1.3 §4.2, dev-plan §5.2）。
 ///         DSU 身份 = 类别 + 版本哈希 + 参数哈希 + 模型 CID。
 ///         只读执行、终止性由最大步数保证、成本按类别计量。
 contract DSU {
@@ -88,7 +88,7 @@ contract DSU {
         return records[dsuId].dsuType;
     }
 
-    /// @notice 类别对应的典型成本模型（白皮书 §3.2：类别相关，而非统一操作码）。
+    /// @notice 类别对应的典型成本模型（白皮书 v1.3 §4.2：类别相关，而非统一操作码）。
     function costModelNote(DSUType t) external pure returns (bytes32 note) {
         if (t == DSUType.HASH) return keccak256("per-hash + per-byte");
         if (t == DSUType.SIGN) return keccak256("per-signature + batch discount");
