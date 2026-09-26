@@ -54,7 +54,7 @@ Sepolia 测试网（组件真实上链验证）。持有 1.0 部署账户：`0x3
 
 ## 参考
 
-- 白皮书 v1.3：`../FunctionComplete 技术组件白皮书 v1.3.md`
+- 白皮书 v1.3：`docs/FCT-whitepaper-v1.3.md`（仓库内）；源文件：`../FunctionComplete 技术组件白皮书 v1.3.md`
 - 开发计划 v1.0：`../FCT 双原语开发计划 v1.0.md`
 - 1.0 资产（保留不动）：`../V1.0/`
 
