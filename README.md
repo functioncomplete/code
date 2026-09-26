@@ -38,7 +38,10 @@ v2/
 - **定位**：技术组件套件（非 L2、非代币）+ 双原语（门级函数 + DSU）+ 五类组件
 - **无代币声明**：经济章节含反诈骗横幅（FCT 无代币/预售/空投）
 - **开发状态**：容器章节含 M1 已部署 Sepolia 的合约地址
-- 双语：HTML 内联中文 + JS EN 词典（137 键，已校验一一对应）
+- 双语：HTML 内联中文 + JS EN 词典（156 键，已校验一一对应）
+- **GateLang 章节**（`#gatelang`）：统一语言前端说明（四层抽象表 + 编译产物），
+  导航 / 首页 CTA / 页脚均含 GateLang 入口；下载 GateLang 白皮书 v2.1（`GateLang-whitepaper-zh.md`）
+- 白皮书下载：FCT 白皮书 v1.3（`FCT-whitepaper-zh.md`）+ GateLang 白皮书 v2.1（`GateLang-whitepaper-zh.md`）
 - 白皮书下载链接指向 v1.3（`FCT-whitepaper-zh.md`）
 
 ```bash

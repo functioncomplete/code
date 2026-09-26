@@ -21,6 +21,8 @@
     'nav.economy': 'Economy',
     'nav.roadmap': 'Roadmap',
     'nav.whitepaper': 'Whitepaper',
+    'nav.gatelang': 'GateLang',
+    'nav.gatelangSec': 'GateLang',
 
     /* hero */
     'hero.badge': 'FCT v2 · Technical component kit · Not an L2, not a token',
@@ -30,6 +32,7 @@
     'hero.lead': 'FCT is not a chain, not a token, and not an L2 — it is a technical component kit for on-chain computation and state management: NAND + LATCH gate-level functions carry computation, containers + CSC carry state, built by the Ethercoin team. Any network that wants reliable on-chain compute can integrate FCT components.',
     'hero.cta1': 'Explore the components',
     'hero.cta2': 'Read whitepaper v1.3',
+    'hero.cta3': 'GateLang frontend',
     'hero.stat1': 'compute primitives (gate-level functions + DSU)',
     'hero.stat2': 'classes of technical components',
     'hero.stat3': 'tokens (all settlement in ETHER)',
@@ -57,6 +60,24 @@
     'prim.p5v': 'Verifiable: data, proofs and resolutions are verified directly by the client, with no trusted third party',
     'prim.p6k': 'DSU',
     'prim.p6v': 'Abstract: agnostic to the carrier (chain, off-chain store, decentralized storage) — only the verifiability of state matters',
+
+    /* gatelang */
+    'gl.eyebrow': 'Unified language frontend',
+    'gl.h2': 'GateLang v2.1 · the unified verifiable-compute language frontend',
+    'gl.lead': 'GateLang takes NAND gates as its only combinational primitive and LATCH as its only state primitive, compiling developer logic into FCT-compatible artifacts through <strong>four layers of abstraction</strong>. Its <code>spec</code> and <code>gateproof</code> generate formal-verification proofs bound to function / container NFTs; AI-assisted development must pass the <code>gatelang-ai-gate</code> gate — <strong>AI is the accelerator, formal verification is the guarantor</strong>.',
+    'gl.tableCap': 'GateLang four-layer abstraction',
+    'gl.th1': 'Layer',
+    'gl.th2': 'Audience and compile target',
+    'gl.r1n': 'L1 gate level',
+    'gl.r1v': 'Hardware engineers / formal researchers → NAND/LATCH netlist (FCT gate-level on-chain functions)',
+    'gl.r2n': 'L2 high-level',
+    'gl.r2v': 'Software developers → gate netlist or DSU calls (FCT gate-level functions + container ABI)',
+    'gl.r3n': 'L3 domain DSL',
+    'gl.r3v': 'Finance / AI / gaming experts → DSU descriptor + dedicated circuits (FCT DSU)',
+    'gl.r4n': 'L4 visual',
+    'gl.r4v': 'Education users / PMs → auto-generated L1/L2 code (FCT function NFT / container NFT)',
+    'gl.dl': 'Download GateLang whitepaper v2.1',
+    'gl.toProvable': 'See the proof path',
 
     /* components */
     'comp.eyebrow': 'Technical components',
@@ -217,6 +238,12 @@
     var wp = 'FCT-whitepaper-zh.md'; // 目前仅中文版；英文版待补（v1.3 起网站尚未同步）
     Array.prototype.forEach.call(document.querySelectorAll('[data-wp]'), function (a) {
       a.setAttribute('href', wp);
+      a.setAttribute('download', '');
+    });
+
+    var gl = 'GateLang-whitepaper-zh.md'; // GateLang 语言前端白皮书（v2.1）
+    Array.prototype.forEach.call(document.querySelectorAll('[data-gl]'), function (a) {
+      a.setAttribute('href', gl);
       a.setAttribute('download', '');
     });
 

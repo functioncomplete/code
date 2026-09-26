@@ -24,6 +24,7 @@
     </a>
     <nav class="nav-links" aria-label="主导航">
       <a href="#primitives" data-i18n="nav.primitives">双原语</a>
+      <a href="#gatelang" data-i18n="nav.gatelangSec">GateLang</a>
       <a href="#components" data-i18n="nav.components">组件</a>
       <a href="#container" data-i18n="nav.container">容器</a>
       <a href="#provable" data-i18n="nav.provable">证明</a>
@@ -34,6 +35,7 @@
       <button class="lang-toggle" id="langToggle" type="button" aria-label="切换语言 / Switch language">
         <span class="lang-zh">中</span><span class="lang-sep">/</span><span class="lang-en">EN</span>
       </button>
+      <a class="btn btn-ghost" href="GateLang-whitepaper-zh.md" data-gl download data-i18n="nav.gatelang">GateLang</a>
       <a class="btn btn-ghost" href="FCT-whitepaper-zh.md" data-wp download data-i18n="nav.whitepaper">白皮书</a>
     </div>
   </div>
@@ -92,6 +94,7 @@
 
     <div class="hero-cta reveal">
       <a class="btn btn-primary" href="#components" data-i18n="hero.cta1">查看组件</a>
+      <a class="btn btn-ghost" href="#gatelang" data-i18n="hero.cta3">GateLang 语言前端</a>
       <a class="btn btn-ghost" href="FCT-whitepaper-zh.md" data-wp download data-i18n="hero.cta2">阅读白皮书 v1.3</a>
     </div>
 
@@ -167,6 +170,42 @@
           <tr><td data-i18n="prim.p6k">DSU</td><td data-i18n="prim.p6v">抽象性：不关心载体（链、链下存储、去中心化存储），只关心状态的可验证性</td></tr>
         </tbody>
       </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============ GATELANG ============ -->
+<section class="section section-alt" id="gatelang">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="gl.eyebrow">统一语言前端</p>
+    <h2 class="reveal" data-i18n="gl.h2">GateLang v2.1 · 统一可验证计算语言前端</h2>
+    <p class="section-lead reveal" data-i18n="gl.lead">
+      GateLang 以 NAND 门为唯一组合原语、LATCH 为唯一状态原语，通过<strong>四层抽象</strong>把开发者逻辑统一编译为 FCT 兼容产物。
+      其 <code>spec</code> 与 <code>gateproof</code> 生成形式化验证证明并与函数 / 容器 NFT 绑定；AI 辅助开发必须经
+      <code>gatelang-ai-gate</code> 强制验证 —— <strong>AI 是加速器，形式化验证是保证者</strong>。
+    </p>
+
+    <div class="table-wrap reveal">
+      <table class="data-table">
+        <caption class="sr-only" data-i18n="gl.tableCap">GateLang 四层抽象</caption>
+        <thead>
+          <tr>
+            <th data-i18n="gl.th1">层</th>
+            <th data-i18n="gl.th2">面向用户与编译目标</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="gl.r1n">L1 门级层</td><td data-i18n="gl.r1v">硬件工程师 / 形式化研究者 → NAND/LATCH 网表（FCT 门级链上函数）</td></tr>
+          <tr><td data-i18n="gl.r2n">L2 高级语言层</td><td data-i18n="gl.r2v">软件开发者 → 门级网表或 DSU 调用（FCT 门级函数 + 容器 ABI）</td></tr>
+          <tr><td data-i18n="gl.r3n">L3 领域 DSL</td><td data-i18n="gl.r3v">金融 / AI / 游戏专家 → DSU 描述文件 + 专用电路（FCT DSU）</td></tr>
+          <tr><td data-i18n="gl.r4n">L4 可视化层</td><td data-i18n="gl.r4v">教育用户 / 产品经理 → 自动生成 L1/L2 代码（FCT 函数 NFT / 容器 NFT）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="hero-cta reveal">
+      <a class="btn btn-primary" href="GateLang-whitepaper-zh.md" data-gl download data-i18n="gl.dl">下载 GateLang 白皮书 v2.1</a>
+      <a class="btn btn-ghost" href="#provable" data-i18n="gl.toProvable">查看证明路径</a>
     </div>
   </div>
 </section>
@@ -434,10 +473,12 @@
     <p class="footer-note" data-i18n="footer.note">技术组件白皮书 v1.3 · 双原语组件套件 · 无代币</p>
     <nav class="footer-links" aria-label="页脚导航">
       <a href="#primitives" data-i18n="nav.primitives">双原语</a>
+      <a href="#gatelang" data-i18n="nav.gatelangSec">GateLang</a>
       <a href="#components" data-i18n="nav.components">组件</a>
       <a href="#container" data-i18n="nav.container">容器</a>
       <a href="#provable" data-i18n="nav.provable">证明</a>
       <a href="#economy" data-i18n="nav.economy">经济</a>
+      <a href="GateLang-whitepaper-zh.md" data-gl download data-i18n="nav.gatelang">GateLang 白皮书</a>
       <a href="FCT-whitepaper-zh.md" data-wp download data-i18n="nav.whitepaper">白皮书</a>
     </nav>
   </div>
