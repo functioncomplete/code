@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /// @title ProofMarket
-/// @notice FCT v2 M3 证明市场（whitepaper v1.2 §5.2–5.3, dev-plan §5.3）。
+/// @notice FCT v2 M3 证明市场（whitepaper v1.3 §6.2–6.3, dev-plan §5.3）。
 ///         Prover 生成执行证明 → 验证者投票（>2/3 达到最终性）→ 结算。
 ///         无效证明罚没保证金，证明者永久失去资格；验证者获得手续费分成。
 /// @dev 原型聚焦结算时序与质押经济，不绑定具体密码学：
@@ -10,7 +10,7 @@ pragma solidity ^0.8.24;
 ///      任务标记 REPLAY / ZK / TEE 路径，验证者可插拨。
 contract ProofMarket {
     /* ===================== 常量 ===================== */
-    /// @notice 2/3 验证者多数（白皮书 §5.3 最终性 >2/3 确认）。
+    /// @notice 2/3 验证者多数（白皮书 v1.3 §6.3 最终性 >2/3 确认）。
     uint256 public constant VOTER_NUM = 2;
     uint256 public constant VOTER_DEN = 3;
     /// @notice 结算手续费 0.5%（分给投 accept 的验证者）。
@@ -64,6 +64,20 @@ contract ProofMarket {
 
     address[] public validators;
     mapping(address => bool) public validatorIndex;
+    /// @notice 验证者在 validators 数组中的 1-based 槽位（0 = 不在）。
+    mapping(address => uint256) public validatorSlot;
+    /// @notice 验证者注册代次（每次注册 +1）：使注销/重注册后的旧投票失效。
+    mapping(address => uint256) public validatorGen;
+    /// @notice 任务 → 验证者 → 投票时的注册代次。
+    mapping(uint256 => mapping(address => uint256)) public voteGen;
+    /// @notice 待结算任务中锁定的质押计数（>0 时禁止 unstake，防抢跑逃逸罚没）。
+    mapping(address => uint256) public lockedTasks;
+    /// @notice 任务 → 绑定的保证金（每任务 MIN_STAKE）。罚没只没收本任务的保证金。
+    mapping(uint256 => uint256) public taskBond;
+    /// @notice 证明者 → 已锁定保证金合计（free stake = proverStakes - lockedBond）。
+    mapping(address => uint256) public lockedBond;
+    /// @notice 拉取式提款账本：转账失败的收款方在此记账，避免阻塞结算。
+    mapping(address => uint256) public pendingWithdrawals;
 
     /* ===================== 事件 ===================== */
     event TaskCreated(uint256 indexed id, address indexed requester, uint256 reward, ProofPath path);
@@ -86,17 +100,45 @@ contract ProofMarket {
         VOTING_WINDOW = votingWindow_;
     }
 
+    /// @notice 尽力转账：失败则记入拉取式提款账本，绝不 revert（防恶意收款方阻塞结算）。
+    function _send(address to, uint256 amount) internal {
+        if (amount == 0) return;
+        (bool ok, ) = payable(to).call{ value: amount }("");
+        if (!ok) pendingWithdrawals[to] += amount;
+    }
+
+    /// @notice 提取因转账失败而记账的余额。
+    function withdraw() external {
+        uint256 a = pendingWithdrawals[msg.sender];
+        require(a > 0, "nothing to withdraw");
+        pendingWithdrawals[msg.sender] = 0;
+        (bool ok, ) = payable(msg.sender).call{ value: a }("");
+        require(ok, "withdraw failed");
+    }
+
     /* ===================== 验证者管理 ===================== */
     function registerValidator(address v) external onlyOwner {
         require(!validatorIndex[v], "dup");
         validatorIndex[v] = true;
         validators.push(v);
+        validatorSlot[v] = validators.length; // 1-based
+        validatorGen[v] += 1; // 新代次：旧投票自动失效
         validatorCount++;
     }
 
     function unregisterValidator(address v) external onlyOwner {
         require(validatorIndex[v], "not validator");
         validatorIndex[v] = false;
+        // swap-and-pop：从数组移除，避免重注册产生重复项（重复项会被重复付款并操纵 quorum）
+        uint256 slot = validatorSlot[v];
+        uint256 last = validators.length;
+        if (slot != last) {
+            address moved = validators[last - 1];
+            validators[slot - 1] = moved;
+            validatorSlot[moved] = slot;
+        }
+        validators.pop();
+        delete validatorSlot[v];
         validatorCount--;
     }
 
@@ -142,7 +184,9 @@ contract ProofMarket {
         require(t.requester == msg.sender, "not requester");
         require(t.status == TaskStatus.OPEN, "not open");
         t.status = TaskStatus.CANCELLED;
-        payable(msg.sender).transfer(t.reward);
+        uint256 rw = t.reward;
+        t.reward = 0;
+        _send(msg.sender, rw);
         emit TaskCancelled(id);
     }
 
@@ -152,7 +196,9 @@ contract ProofMarket {
         require(t.status == TaskStatus.OPEN, "not open");
         require(block.timestamp >= t.expiresAt, "not expired");
         t.status = TaskStatus.EXPIRED;
-        payable(t.requester).transfer(t.reward);
+        uint256 rw = t.reward;
+        t.reward = 0;
+        _send(t.requester, rw);
         emit TaskExpired(id);
     }
 
@@ -165,11 +211,12 @@ contract ProofMarket {
     }
 
     function unstake() external {
+        require(lockedBond[msg.sender] == 0, "stake locked");
         uint256 a = proverStakes[msg.sender];
         require(a > 0, "no stake held");
         proverStakes[msg.sender] = 0;
         totalStake -= a;
-        payable(msg.sender).transfer(a);
+        _send(msg.sender, a);
         emit Unstaked(msg.sender, a);
     }
 
@@ -180,12 +227,17 @@ contract ProofMarket {
         require(block.timestamp < t.expiresAt, "expired");
         require(!banned[msg.sender], "banned");
         require(proverStakes[msg.sender] > 0, "no stake");
+        // 逐任务绑定 MIN_STAKE：一份质押不能担保无限并发任务（free stake 须足额）
+        require(proverStakes[msg.sender] - lockedBond[msg.sender] >= MIN_STAKE, "free stake < MIN_STAKE");
         require(p.inputHash == t.inputHash, "input mismatch");
         if (t.outputHash != bytes32(0)) {
             require(p.outputHash == t.outputHash, "output mismatch");
         }
         t.status = TaskStatus.SUBMITTED;
         t.prover = msg.sender;
+        lockedTasks[msg.sender]++;
+        taskBond[id] = MIN_STAKE;
+        lockedBond[msg.sender] += MIN_STAKE;
         t.proofHash = keccak256(abi.encodePacked(p.inputHash, p.outputHash, p.payload));
         t.submittedAt = block.timestamp;
         emit ProofSubmitted(id, msg.sender, t.proofHash);
@@ -197,7 +249,14 @@ contract ProofMarket {
         require(validatorIndex[msg.sender], "not validator");
         Task storage t = tasks[id];
         require(t.status == TaskStatus.SUBMITTED, "not submitted");
-        require(!acceptVote[id][msg.sender] && !rejectVote[id][msg.sender], "voted");
+        require(msg.sender != t.prover, "prover cannot vote");
+        require(msg.sender != t.requester, "requester cannot vote");
+        require(block.timestamp < t.submittedAt + VOTING_WINDOW, "window closed");
+        require(!_voted(id, msg.sender, true) && !_voted(id, msg.sender, false), "voted");
+        // 清除可能残留的旧方向票（重注册后旧 flag 会在新代次下“复活”，使两个方向都为真）
+        delete acceptVote[id][msg.sender];
+        delete rejectVote[id][msg.sender];
+        voteGen[id][msg.sender] = validatorGen[msg.sender];
         if (accept) {
             acceptVote[id][msg.sender] = true;
             t.acceptVotes++;
@@ -208,11 +267,18 @@ contract ProofMarket {
         emit Voted(id, msg.sender, accept);
     }
 
+    /// @notice 该验证者在当前注册代次下是否已投该任务的票（旧代次的投票视为无效）。
+    function _voted(uint256 id, address v, bool accept) internal view returns (bool) {
+        return validatorGen[v] != 0
+            && voteGen[id][v] == validatorGen[v]
+            && (accept ? acceptVote[id][v] : rejectVote[id][v]);
+    }
+
     function allVoted(uint256 id) public view returns (bool) {
         for (uint256 i = 0; i < validators.length; i++) {
             address v = validators[i];
             if (!validatorIndex[v]) continue;
-            if (!acceptVote[id][v] && !rejectVote[id][v]) return false;
+            if (!_voted(id, v, true) && !_voted(id, v, false)) return false;
         }
         return validatorCount > 0;
     }
@@ -224,12 +290,22 @@ contract ProofMarket {
         Task storage t = tasks[id];
         require(t.status == TaskStatus.SUBMITTED, "not submitted");
 
+        // 按“当前注册代次的有效票”计票（存储计数器会包含已失效/重复票）
+        uint256 liveAccept = 0;
+        uint256 liveReject = 0;
+        for (uint256 i = 0; i < validators.length; i++) {
+            address v = validators[i];
+            if (!validatorIndex[v]) continue;
+            if (_voted(id, v, true)) liveAccept++;
+            else if (_voted(id, v, false)) liveReject++;
+        }
+
         uint256 vc = validatorCount;
-        if (t.acceptVotes * VOTER_DEN > vc * VOTER_NUM) {
+        if (liveAccept * VOTER_DEN > vc * VOTER_NUM) {
             _finalize(id);
             return;
         }
-        if (t.rejectVotes * VOTER_DEN > vc * VOTER_NUM) {
+        if (liveReject * VOTER_DEN > vc * VOTER_NUM) {
             _slash(id);
             return;
         }
@@ -243,20 +319,33 @@ contract ProofMarket {
     function _finalize(uint256 id) internal {
         Task storage t = tasks[id];
         t.status = TaskStatus.FINALIZED;
+        lockedTasks[t.prover]--;
+        lockedBond[t.prover] -= taskBond[id];
         uint256 fee = (t.reward * FEE_BPS) / 10000;
         uint256 payout = t.reward - fee;
-        payable(t.prover).transfer(payout);
+        t.reward = 0;
 
-        // 手续费均分给投 accept 的验证者（渐进整除，无尘埃残留）
-        uint256 remaining = fee;
-        uint256 n = t.acceptVotes;
-        for (uint256 i = 0; i < validators.length && n > 0; i++) {
+        // 统计实际可付款的 accept 验证者（已注销者不在此列，避免留灰尘）
+        uint256 payees = 0;
+        for (uint256 i = 0; i < validators.length; i++) {
             address v = validators[i];
-            if (!validatorIndex[v] || !acceptVote[id][v]) continue;
-            uint256 share = remaining / n;
-            payable(v).transfer(share);
-            remaining -= share;
-            n--;
+            if (_voted(id, v, true)) payees++;
+        }
+        if (payees == 0) {
+            // 无 accept 验证者可付：手续费归证明者，避免锁死
+            _send(t.prover, payout + fee);
+        } else {
+            _send(t.prover, payout);
+            uint256 remaining = fee;
+            uint256 n = payees;
+            for (uint256 i = 0; i < validators.length && n > 0; i++) {
+                address v = validators[i];
+                if (!_voted(id, v, true)) continue;
+                uint256 share = remaining / n;
+                _send(v, share);
+                remaining -= share;
+                n--;
+            }
         }
         emit TaskFinalized(id, t.prover, payout);
     }
@@ -264,25 +353,41 @@ contract ProofMarket {
     function _slash(uint256 id) internal {
         Task storage t = tasks[id];
         t.status = TaskStatus.SLASHED;
+        lockedTasks[t.prover]--;
         address prover = t.prover;
-        uint256 slashed = proverStakes[prover];
-        proverStakes[prover] = 0;
+        lockedBond[prover] -= taskBond[id];
+        // 只没收本任务的保证金（其余任务的保证金不受影响）
+        uint256 slashed = taskBond[id];
+        proverStakes[prover] -= slashed;
         totalStake -= slashed;
         banned[prover] = true;
 
         uint256 toRequester = (slashed * SLASH_VALIDATOR_BPS) / 10000;
-        payable(t.requester).transfer(toRequester);
+        // 归还需求方托管的奖励（任务失败，需求方不应损失奖励）
+        uint256 reward = t.reward;
+        t.reward = 0;
 
-        // 其余分给投 reject 的验证者
-        uint256 remaining = slashed - toRequester;
-        uint256 n = t.rejectVotes;
-        for (uint256 i = 0; i < validators.length && n > 0; i++) {
+        // 统计实际可付款的 reject 验证者
+        uint256 payees = 0;
+        for (uint256 i = 0; i < validators.length; i++) {
             address v = validators[i];
-            if (!validatorIndex[v] || !rejectVote[id][v]) continue;
-            uint256 share = remaining / n;
-            payable(v).transfer(share);
-            remaining -= share;
-            n--;
+            if (_voted(id, v, false)) payees++;
+        }
+        uint256 remaining = slashed - toRequester;
+        if (payees == 0) {
+            // 无 reject 验证者可付：连同罚没余款一并归需求方，避免锁死
+            _send(t.requester, reward + toRequester + remaining);
+        } else {
+            _send(t.requester, reward + toRequester);
+            uint256 n = payees;
+            for (uint256 i = 0; i < validators.length && n > 0; i++) {
+                address v = validators[i];
+                if (!_voted(id, v, false)) continue;
+                uint256 share = remaining / n;
+                _send(v, share);
+                remaining -= share;
+                n--;
+            }
         }
         emit TaskSlashed(id, prover, slashed);
     }
@@ -291,6 +396,10 @@ contract ProofMarket {
     function _reopen(uint256 id) internal {
         Task storage t = tasks[id];
         t.status = TaskStatus.OPEN;
+        if (t.prover != address(0)) {
+            lockedTasks[t.prover]--;
+            lockedBond[t.prover] -= taskBond[id];
+        }
         t.prover = address(0);
         t.proofHash = bytes32(0);
         t.submittedAt = 0;

@@ -41,11 +41,11 @@ contract VerifyM4 is Script {
         dsu.consumeSteps(dsuId, 256);
 
         // 2) 门级函数身份登记（NAND 网络哈希）
-        bytes32 gId = reg.registerGate(netHashA, ioSpec, 36, 9, 250, vm.addr(pk));
+        bytes32 gId = reg.registerGate(netHashA, ioSpec, 36, 9, 250, vm.addr(pk), keccak256("gateproof"));
         console2.log(">> Gate register =>", Lib.toString(gId));
 
         // 3) DSU 身份登记（版本+参数）
-        bytes32 idDsu = reg.registerDSU(dsuVh, dsuVh, model0, 120, vm.addr(pk));
+        bytes32 idDsu = reg.registerDSU(DSU.DSUType.HASH, dsuVh, dsuVh, model0, 120, vm.addr(pk), keccak256("dsuproof"));
         console2.log(">> DSU identity register =>", Lib.toString(idDsu));
 
         // 4) 依赖图：门级函数依赖 DSU（组合版税 40%）
@@ -63,6 +63,10 @@ contract VerifyM4 is Script {
 
         require(reg.identityKind(gId) == 1, "gate kind");
         require(reg.identityKind(idDsu) == 2, "dsu kind");
+
+        // v1.3 §3.4/§6.4：形式化验证证明已与身份绑定（可在调用前校验）
+        require(reg.gateProofOf(gId) == keccak256("gateproof"), "gate proof bound");
+        require(reg.dsuProofOf(idDsu) == keccak256("dsuproof"), "dsu proof bound");
 
         (bytes32[] memory ids, uint16[] memory shares) = reg.royaltySchedule(gId);
         require(ids.length == 1 && ids[0] == idDsu && shares[0] == 4000, "royalty schedule fail");

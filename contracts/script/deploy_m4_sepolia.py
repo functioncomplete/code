@@ -4,16 +4,48 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
-CONTRACTS_DIR = os.path.expanduser("~/v2/contracts")
+CONTRACTS_DIR = str(Path(__file__).resolve().parent.parent)
 SCRIPT = "DeployM4SharedLayer.s.sol"
 FORGE = os.environ.get("FORGE", "/home/reslsatoshigold/.foundry/bin/forge")
 RPC = os.environ.get("FCT_SEPOLIA_RPC", "https://ethereum-sepolia-rpc.publicnode.com")
-DEPLOYMENTS = os.path.expanduser("~/v2/deployments")
+DEPLOYMENTS = str(Path(__file__).resolve().parent.parent.parent / "deployments")
 
 
-def run(cmd, cwd=CONTRACTS_DIR, extra_env=None):
-    print(f"$ {' '.join(cmd)}", flush=True)
+def _auth(pk, acct):
+    """认证参数：优先 Foundry keystore（FORGE_ACCOUNT），否则回退 --private-key 并告警。"""
+    if acct:
+        return ["--account", acct]
+    print("WARNING: 使用 --private-key —— 私钥会出现在进程参数中（ps/proc 可读）；"
+          "建议改用 Foundry keystore 并设 FORGE_ACCOUNT=<name>。", flush=True)
+    return ["--private-key", pk]
+
+
+def _check_env_perms(env_file):
+    try:
+        mode = env_file.stat().st_mode & 0o777
+        if mode & 0o077:
+            print(f"WARNING: {env_file} 权限 {oct(mode)} 过于宽松（含私钥，建议 chmod 600）", flush=True)
+    except OSError:
+        pass
+
+
+def load_env():
+    env_file = Path.home() / ".fct-sepolia.env"
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if "=" in line and not line.startswith("#"):
+                k, v = line.split("=", 1)
+                os.environ.setdefault(k.strip(), v.strip().strip('"'))
+    _check_env_perms(env_file)
+
+
+def run(cmd, cwd=CONTRACTS_DIR, extra_env=None, redact=None):
+    # 绝不回显私钥：argv 中的密钥一律打码
+    shown = ["***" if (redact and a == redact) else a for a in cmd]
+    print(f"$ {' '.join(shown)}", flush=True)
     env = dict(os.environ)
     if extra_env:
         env.update(extra_env)
@@ -26,17 +58,19 @@ def run(cmd, cwd=CONTRACTS_DIR, extra_env=None):
 
 def main():
     os.makedirs(DEPLOYMENTS, exist_ok=True)
+    load_env()
+    # load_env 之后重解析：使 ~/.fct-sepolia.env 中的 FORGE/RPC 生效
+    forge = os.environ.get("FORGE", FORGE)
+    rpc = os.environ.get("FCT_SEPOLIA_RPC", RPC)
     pk = os.environ.get("DEPLOY_PRIVATE_KEY")
-    if not pk:
-        with open(os.path.expanduser("~/.fct-sepolia.env")) as f:
-            for line in f:
-                if line.startswith("DEPLOY_PRIVATE_KEY="):
-                    pk = line.split("=", 1)[1].strip().strip('"')
-    assert pk, "缺少 DEPLOY_PRIVATE_KEY"
+    acct = os.environ.get("FORGE_ACCOUNT")
+    if not pk and not acct:
+        print("缺少 DEPLOY_PRIVATE_KEY（或用 FORGE_ACCOUNT 指定 keystore）")
+        sys.exit(1)
 
-    out = run([FORGE, "script", f"script/{SCRIPT}", "--rpc-url", RPC,
-               "--broadcast", "--skip-simulation", "--private-key", pk],
-              cwd=CONTRACTS_DIR, extra_env={"DEPLOY_PRIVATE_KEY": pk})
+    out = run([forge, "script", f"script/{SCRIPT}", "--rpc-url", rpc,
+               "--broadcast", "--skip-simulation", *_auth(pk, acct)],
+              cwd=CONTRACTS_DIR, extra_env={"DEPLOY_PRIVATE_KEY": pk}, redact=pk)
     # 解析地址
     lines = out.splitlines()
     addrs = {}
@@ -46,11 +80,18 @@ def main():
             addrs[key.strip()] = val.strip()
     print(out[-2000:])
 
+    # 三个地址都必须解析成功（否则 M4 部署未完成，不得记为成功）
+    for k in ("DSU_REGISTRY", "IDENTITY_REGISTRY", "PRIMITIVE_SELECTOR"):
+        v = addrs.get(k)
+        if not v or not v.startswith("0x"):
+            print(f"ERROR: 未能解析 {k} 地址，M4 部署可能失败")
+            sys.exit(1)
+
     record = {
         "milestone": "M4",
         "deployedAt": "2026-09-24",
         "network": "sepolia",
-        "rpc": RPC,
+        "rpc": rpc,
         "dsuRegistry": addrs.get("DSU_REGISTRY"),
         "identityRegistry": addrs.get("IDENTITY_REGISTRY"),
         "primitiveSelector": addrs.get("PRIMITIVE_SELECTOR"),

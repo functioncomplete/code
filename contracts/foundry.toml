@@ -1,3 +1,6 @@
+# 依赖：forge-std 1.16.2（仅测试用，src/ 无外部依赖）。安装/固定：
+#   cd contracts && forge install foundry-rs/forge-std@v1.16.2 --no-commit
+# 或以 git submodule 固定；lib/ 已纳入版本控制（见仓库 .gitignore 注释）。
 [profile.default]
 src = "src"
 out = "out"

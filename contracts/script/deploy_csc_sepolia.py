@@ -19,6 +19,24 @@ CONTRACTS = Path(__file__).resolve().parent.parent
 DEPLOY_OUT = Path(__file__).resolve().parent.parent.parent / "deployments" / "csc-sepolia.json"
 
 
+def _auth(pk, acct):
+    """认证参数：优先 Foundry keystore（FORGE_ACCOUNT），否则回退 --private-key 并告警。"""
+    if acct:
+        return ["--account", acct]
+    print("WARNING: 使用 --private-key —— 私钥会出现在进程参数中（ps/proc 可读）；"
+          "建议改用 Foundry keystore 并设 FORGE_ACCOUNT=<name>。", flush=True)
+    return ["--private-key", pk]
+
+
+def _check_env_perms(env_file):
+    try:
+        mode = env_file.stat().st_mode & 0o777
+        if mode & 0o077:
+            print(f"WARNING: {env_file} 权限 {oct(mode)} 过于宽松（含私钥，建议 chmod 600）", flush=True)
+    except OSError:
+        pass
+
+
 def load_env():
     env_file = Path.home() / ".fct-sepolia.env"
     if env_file.exists():
@@ -27,25 +45,30 @@ def load_env():
             if "=" in line and not line.startswith("#"):
                 k, v = line.split("=", 1)
                 os.environ.setdefault(k.strip(), v.strip().strip('"'))
+    _check_env_perms(env_file)
 
 
 def main():
     load_env()
+    # load_env 之后重解析：使 ~/.fct-sepolia.env 中的 FORGE/SEPOLIA_RPC 生效
+    forge = os.environ.get("FORGE", FORGE)
+    rpc = os.environ.get("SEPOLIA_RPC", RPC)
     pk = os.environ.get("DEPLOY_PRIVATE_KEY")
+    acct = os.environ.get("FORGE_ACCOUNT")
     addr = os.environ.get("DEPLOY_ADDRESS")
-    if not pk or not addr:
-        print("缺少 DEPLOY_PRIVATE_KEY / DEPLOY_ADDRESS（见 ~/.fct-sepolia.env）")
+    if (not pk and not acct) or not addr:
+        print("缺少 DEPLOY_PRIVATE_KEY（或用 FORGE_ACCOUNT 指定 keystore）/ DEPLOY_ADDRESS（见 ~/.fct-sepolia.env）")
         sys.exit(1)
 
     env = dict(
         os.environ,
-        PATH=os.path.dirname(FORGE) + ":" + os.environ.get("PATH", ""),
+        PATH=(os.path.dirname(forge) + ":" if os.path.dirname(forge) else "") + os.environ.get("PATH", ""),
     )
 
-    print(f"部署 CSC 组件到 Sepolia: {RPC}\n部署账户: {addr}\n")
+    print(f"部署 CSC 组件到 Sepolia: {rpc}\n部署账户: {addr}\n")
     r = subprocess.run(
-        [FORGE, "script", "script/DeployCSC.s.sol",
-         "--rpc-url", RPC, "--broadcast", "--private-key", pk],
+        [forge, "script", "script/DeployCSC.s.sol",
+         "--rpc-url", rpc, "--broadcast", *_auth(pk, acct)],
         cwd=CONTRACTS, capture_output=True, text=True, env=env, timeout=300,
     )
     if r.returncode != 0:

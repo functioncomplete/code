@@ -3,12 +3,18 @@ pragma solidity ^0.8.24;
 
 import {BinaryMerkle} from "./lib/BinaryMerkle.sol";
 
+/// @notice 容器所有权预言机：与 ContainerNFT.ownerOf(uint256) 同签名。
+///         生产环境传入 ContainerNFT 地址；测试可传 mock。
+interface IContainerOwner {
+    function ownerOf(uint256 tokenId) external view returns (address);
+}
+
 /// @title CSC — Compressed State Commitment
-/// @notice FCT state component (whitepaper v1.2 §4.2–4.3).
+/// @notice FCT state component (whitepaper v1.3 §5.2–5.3).
 ///         - One sparse binary Merkle tree commits ALL container state
 ///           (current root); leaves are indexed by container ID, not address.
 ///         - History is the same tree's root snapshotted per epoch (unified
-///           history + extended tree per the v1.2 optimization).
+///           history + extended tree per the v1.3 optimization).
 ///         - Hot/cold separation: hot states stay fully accessible; cold
 ///           states (rent unpaid / evicted) keep only their commitment leaf
 ///           on-chain, with full data managed by off-chain state slices.
@@ -27,6 +33,10 @@ contract CSC {
     uint256 public immutable GRACE_EPOCHS;
     /// @notice Base rent per container per epoch (wei).
     uint256 public immutable BASE_RENT;
+    /// @notice 容器所有权源头（ContainerNFT）：submitState 授权用 ownerOf(containerId)。
+    address public immutable containerNFT;
+    /// @notice history 回填的最大 epoch 跨度（防长期停用后一次提交的 gas DoS）。
+    uint256 public constant MAX_BACKFILL = 64;
 
     /* ===================== Core state ===================== */
     /// @notice Current commitment root of the sparse binary tree.
@@ -44,6 +54,7 @@ contract CSC {
         uint256 updatedAtEpoch;
         bool resolved;         // resolution flag (resolution table)
         bool cold;             // evicted to cold storage?
+        bool initialized;      // 是否已登记（替代 dataHash==0 哨兵，防未注册 id 误判）
     }
 
     mapping(bytes32 => Container) public containers;
@@ -74,14 +85,18 @@ contract CSC {
         uint256 epochLen,
         uint256 maxHot,
         uint256 graceEpochs,
-        uint256 baseRent
+        uint256 baseRent,
+        address containerNFT_
     ) {
         require(treeDepth <= 32, "depth>32");
+        require(epochLen > 0, "epochLen=0");
+        require(containerNFT_ != address(0), "nft=0");
         TREE_DEPTH = treeDepth;
         EPOCH_LEN = epochLen;
         MAX_HOT = maxHot;
         GRACE_EPOCHS = graceEpochs;
         BASE_RENT = baseRent;
+        containerNFT = containerNFT_;
         // genesis: empty tree root
         currentRoot = BinaryMerkle.emptySubtree(treeDepth);
         lastCheckpointEpoch = currentEpoch();
@@ -108,7 +123,7 @@ contract CSC {
         return BASE_RENT + (BASE_RENT * excess) / 100;
     }
 
-    /// @notice Public client-side verification (§4.2): proves `dataHash` sits
+    /// @notice Public client-side verification (§5.2): proves `dataHash` sits
     ///         at `index` under `currentRoot`. No trust in the caller.
     function verifyInclusion(
         bytes32 dataHash,
@@ -119,8 +134,8 @@ contract CSC {
         return BinaryMerkle.validateInclusion(currentRoot, dataHash, index, p, TREE_DEPTH);
     }
 
-    function leafIndex(uint256 containerId) public pure returns (uint256) {
-        return containerId & ((1 << 32) - 1);
+    function leafIndex(uint256 containerId) public view returns (uint256) {
+        return containerId & ((1 << TREE_DEPTH) - 1);
     }
 
     /* ===================== State submission ===================== */
@@ -137,10 +152,15 @@ contract CSC {
         bytes32[] calldata proof,
         bool resolved
     ) external {
+        // 授权：仅容器所有者（ContainerNFT.ownerOf）可提交其状态。
+        if (IContainerOwner(containerNFT).ownerOf(containerId) != msg.sender) {
+            revert NotContainerOwner();
+        }
+        require(containerId < (1 << TREE_DEPTH), "index overflow");
         bytes32 id = bytes32(containerId);
         Container storage c = containers[id];
         require(!c.cold, "container is cold; wake first");
-        bytes32 oldLeaf = c.dataHash == bytes32(0) ? bytes32(0) : c.dataHash;
+        bytes32 oldLeaf = c.dataHash;
 
         uint256 idx = leafIndex(containerId);
         bytes32[] memory p = proof; // calldata -> memory for library
@@ -154,7 +174,8 @@ contract CSC {
         );
 
         uint256 epoch = currentEpoch();
-        if (c.dataHash == bytes32(0) && !c.resolved) {
+        if (!c.initialized) {
+            c.initialized = true;
             hotCount++; // first time seen -> leaves -> hot
             // rent counter starts at this epoch; no retroactive arrears
             if (rentPaidUntilEpoch[id] == 0) rentPaidUntilEpoch[id] = epoch;
@@ -167,7 +188,10 @@ contract CSC {
         currentRoot = newRoot;
 
         if (epoch > lastCheckpointEpoch) {
-            for (uint256 e = lastCheckpointEpoch + 1; e <= epoch; e++) {
+            // gap 回填有上限，避免长期停用后一次提交遍历成千上万 epoch（gas DoS）。
+            uint256 from = lastCheckpointEpoch + 1;
+            uint256 start = epoch > from + MAX_BACKFILL ? epoch - MAX_BACKFILL : from;
+            for (uint256 e = start; e <= epoch; e++) {
                 historyRoot[e] = currentRoot; // fill gaps with latest root
             }
             lastCheckpointEpoch = epoch;
@@ -184,14 +208,17 @@ contract CSC {
     function payRent(uint256 containerId, uint256 epochs) external payable {
         bytes32 id = bytes32(containerId);
         uint256 rate = effectiveRentPerEpoch();
-        uint256 cost = rate * epochs;
-        require(msg.value >= cost, "insufficient payment");
         uint256 until = rentPaidUntilEpoch[id];
         uint256 nowE = currentEpoch();
-        if (until < nowE) until = nowE;
-        rentPaidUntilEpoch[id] = until + epochs;
+        // 欠租不可豁免：until < nowE 时先把欠的 nowE-until 个 epoch 一并计入，
+        // 否则拖欠者可用极低成本重置宽限窗口、规避驱逐（与 wakeUp 语义一致）。
+        uint256 owed = until < nowE ? nowE - until : 0;
+        uint256 cost = rate * (owed + epochs);
+        require(msg.value >= cost, "insufficient payment");
+        rentPaidUntilEpoch[id] = (until > nowE ? until : nowE) + epochs;
         if (msg.value > cost) {
-            payable(msg.sender).transfer(msg.value - cost);
+            (bool ok, ) = payable(msg.sender).call{ value: msg.value - cost }("");
+            require(ok, "refund failed");
         }
         emit RentPaid(id, epochs, cost);
     }
@@ -202,6 +229,7 @@ contract CSC {
     ///         off-chain state slices. Anyone may evict (leaf is unchanged).
     function evict(bytes32 containerId) external {
         Container storage c = containers[containerId];
+        require(c.initialized, "not registered");
         require(!c.cold, "already cold");
         uint256 nowE = currentEpoch();
         if (nowE <= rentPaidUntilEpoch[containerId] + GRACE_EPOCHS) {
@@ -229,20 +257,29 @@ contract CSC {
 
         uint256 paidUntil = rentPaidUntilEpoch[id];
         uint256 nowE = currentEpoch();
+        uint256 refundAmt = 0;
         if (nowE > paidUntil) {
             uint256 due = effectiveRentPerEpoch() * (nowE - paidUntil);
             require(msg.value >= due, "rent in arrears");
             rentPaidUntilEpoch[id] = nowE;
-            if (msg.value > due) {
-                payable(msg.sender).transfer(msg.value - due);
-            }
+            refundAmt = msg.value - due;
+        } else {
+            // 未欠租：不收费，全额退还（此前 msg.value 被吞且 CSC 无提现 → 永久锁死）
+            refundAmt = msg.value;
         }
 
+        // CEI：先落状态再退款。否则退款回调可在 c.cold 仍为 true 时重入 wakeUp，
+        // 重复执行 hotCount++，破坏 hotCount 不变式并抬高全局租金。
         c.dataHash = dataHash;
         c.cold = false;
         c.updatedAtEpoch = nowE;
         hotCount++;
         emit Woken(id, dataHash, nowE);
+
+        if (refundAmt > 0) {
+            (bool ok, ) = payable(msg.sender).call{ value: refundAmt }("");
+            require(ok, "refund failed");
+        }
     }
 
     /// @notice Read any historical root snapshot (history Merkle tree).

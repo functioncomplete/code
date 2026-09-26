@@ -5,6 +5,36 @@ import "forge-std/Test.sol";
 import "../src/Container.sol";
 import "../src/ContainerNFT.sol";
 
+/// @notice 最小 ERC-20 mock（返回 bool）。
+contract MockERC20 {
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    function mint(address to, uint256 a) external {
+        balanceOf[to] += a;
+    }
+
+    function approve(address s, uint256 a) external returns (bool) {
+        allowance[msg.sender][s] = a;
+        return true;
+    }
+
+    function transferFrom(address f, address t, uint256 a) external returns (bool) {
+        require(balanceOf[f] >= a, "bal");
+        allowance[f][msg.sender] -= a;
+        balanceOf[f] -= a;
+        balanceOf[t] += a;
+        return true;
+    }
+
+    function transfer(address t, uint256 a) external returns (bool) {
+        require(balanceOf[msg.sender] >= a, "bal");
+        balanceOf[msg.sender] -= a;
+        balanceOf[t] += a;
+        return true;
+    }
+}
+
 /// @notice M1 容器组件测试：ContainerNFT + Container（白皮书 §4.1）
 contract ContainerTest is Test {
     ContainerNFT public cNft;
@@ -38,6 +68,46 @@ contract ContainerTest is Test {
     }
 
     // ------------------------------------------------------------------
+    // ERC-165 / tokenURI（白皮书 v1.3 §8.1）
+    // ------------------------------------------------------------------
+    function test_erc165_and_tokenURI() public view {
+        assertTrue(cNft.supportsInterface(0x01ffc9a7)); // ERC-165
+        assertTrue(cNft.supportsInterface(0x80ac58cd)); // ERC-721
+        assertEq(cNft.tokenURI(tokenId), "ipfs://fct-container/1");
+    }
+
+    // ------------------------------------------------------------------
+    // ERC-20 资产（余额差记账 + 返回值校验 + 权限）
+    // ------------------------------------------------------------------
+    function test_depositToken_creditsActualBalance() public {
+        MockERC20 tk = new MockERC20();
+        tk.mint(alice, 1000);
+        vm.startPrank(alice);
+        tk.approve(address(container), 1000);
+        container.depositToken(address(tk), 1000);
+        vm.stopPrank();
+        assertEq(container.tokenBalances(address(tk)), 1000);
+        assertEq(tk.balanceOf(address(container)), 1000);
+    }
+
+    function test_withdrawToken_onlyAdmin_andTransfers() public {
+        MockERC20 tk = new MockERC20();
+        tk.mint(alice, 1000);
+        vm.startPrank(alice);
+        tk.approve(address(container), 1000);
+        container.depositToken(address(tk), 1000);
+        vm.stopPrank();
+
+        vm.expectRevert("Container: not admin");
+        container.withdrawToken(address(tk), 100);
+
+        vm.prank(alice);
+        container.withdrawToken(address(tk), 400);
+        assertEq(container.tokenBalances(address(tk)), 600);
+        assertEq(tk.balanceOf(alice), 400);
+    }
+
+    // ------------------------------------------------------------------
     // 核心语义：转移容器 NFT → 容器管理员跟随
     // ------------------------------------------------------------------
     function test_transferNFT_movesContainerAdmin() public {
@@ -46,6 +116,7 @@ contract ContainerTest is Test {
 
         assertEq(cNft.ownerOf(tokenId), bob);
         assertEq(container.admin(), bob); // 联动生效
+        assertEq(container.beneficiary(), bob); // 收益地址随 NFT 转移（§5.1，防旧主 rug）
     }
 
     function test_safeTransferNFT_movesContainerAdmin() public {
@@ -56,7 +127,7 @@ contract ContainerTest is Test {
         vm.prank(bob);
         cNft.transferFrom(bob, alice, tokenId);
         assertEq(container.admin(), alice); // 回归
-        assertEq(container.beneficiary(), alice); // 管理员变更后收益地址跟随？不——beneficiary 保持原值
+        assertEq(container.beneficiary(), alice); // 收益地址随 NFT 转移（§5.1）：转回 alice 后归 alice
     }
 
     // ------------------------------------------------------------------
@@ -163,12 +234,14 @@ contract ContainerTest is Test {
         container.setAiService(keccak256("model"), 1 ether, alice);
 
         vm.deal(bob, 3 ether);
+        uint256 aliceBefore = alice.balance;
         vm.prank(bob);
         container.payInference{value: 3 ether}(); // 付 3，价 1 → 收益 1，退 2
 
         assertEq(container.totalRevenue(), 1 ether);
         assertEq(bob.balance, 2 ether); // 退还多付
-        assertEq(address(container).balance, 1 ether);
+        assertEq(alice.balance, aliceBefore + 1 ether); // 收益地址收款（§5.1）
+        assertEq(address(container).balance, 0); // 收益不再沉淀在容器
     }
 
     function test_payInference_insufficient_reverts() public {

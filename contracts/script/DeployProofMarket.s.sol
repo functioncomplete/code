@@ -5,7 +5,7 @@ import {Script, console2} from "forge-std/Script.sol";
 import {ProofMarket} from "../src/ProofMarket.sol";
 
 /// @notice v2 M3 ProofMarket 证明市场部署脚本（Sepolia）
-/// @dev 原型参数（白皮书 v1.2 §5.2–5.3 无固定数值，取原合理值）：
+/// @dev 原型参数（白皮书 v1.3 §6.2–6.3 无固定数值，取原合理值）：
 ///        VOTING_WINDOW = 3600s（提交后 1 小时投票窗口）
 ///      其余常量在合约内：>2/3 多数、手续费 0.5%、罚没 50/50、MIN_STAKE=0.01 ETH
 contract DeployProofMarket is Script {

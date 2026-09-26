@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import {DSU} from "./DSU.sol";
+
 /// @title IdentityRegistry
-/// @notice FCT v2 M4 双原语身份登记（whitepaper §7.2, dev-plan §5.3, ARCHITECTURE §4）。
+/// @notice FCT v2 M4 双原语身份登记（whitepaper v1.3 §8.2, dev-plan §5.3, ARCHITECTURE §4）。
 ///         门级函数身份 = NAND 网络哈希（跨链天然唯一）；DSU 身份 = 版本+参数+模型。
 ///         显式依赖图登记（结构性组合 + 组合版税按引用关系分配）。
 contract IdentityRegistry {
@@ -10,6 +12,7 @@ contract IdentityRegistry {
     struct GateIdentity {
         bytes32 networkHash; // NAND 网络完整哈希（跨链身份锚）
         bytes32 ioSpec; // 输入/输出接口哈希
+        bytes32 proofHash; // 形式化验证证明哈希（GateLang spec/gateproof，v1.3 §3.4/§6.4）
         uint32 gateCount; // 资源：门数
         uint32 depth; // 资源：逻辑深度
         uint16 royaltyBps; // 版税参数（0..10000）
@@ -19,9 +22,11 @@ contract IdentityRegistry {
 
     /* ===================== DSU 身份 ===================== */
     struct DSUIdentity {
+        DSU.DSUType dsuType; // 类别（与 DSU.sol 身份派生同源）
         bytes32 versionHash; // 实现版本
         bytes32 paramsHash; // 参数（固定精度/域参数）
         bytes32 modelCID; // 模型 CID（非 ML 为 0）
+        bytes32 proofHash; // 形式化验证证明哈希（spec/gateproof，v1.3 §6.4）
         uint16 royaltyBps;
         address owner;
         bool active;
@@ -39,6 +44,8 @@ contract IdentityRegistry {
     mapping(bytes32 => DSUIdentity) public dsus; // dsuId -> DSU 身份
     mapping(bytes32 => Dependency[]) public deps; // 依赖方 identityHash -> 依赖列表
     address public immutable owner;
+    /// @notice 单一身份的依赖数上限（防 royaltySchedule 无界循环 gas DoS）。
+    uint256 public constant MAX_DEPS = 64;
 
     event GateRegistered(bytes32 indexed networkHash, address indexed owner, uint32 gateCount);
     event DSURegistered(bytes32 indexed dsuId, address indexed owner);
@@ -62,15 +69,19 @@ contract IdentityRegistry {
         uint32 gateCount,
         uint32 depth,
         uint16 royaltyBps,
-        address fnOwner
+        address fnOwner,
+        bytes32 proofHash
     ) external onlyOwner returns (bytes32 id) {
         require(networkHash != bytes32(0), "net 0");
         require(ioSpec != bytes32(0), "io 0");
         require(!gates[networkHash].active, "dup gate");
         require(gateCount > 0 && royaltyBps <= 10000, "bad params");
+        // v1.3 §3.4：注册身份必须携带形式化验证证明（区别于"未验证"）
+        require(proofHash != bytes32(0), "proof 0");
         gates[networkHash] = GateIdentity({
             networkHash: networkHash,
             ioSpec: ioSpec,
+            proofHash: proofHash,
             gateCount: gateCount,
             depth: depth,
             royaltyBps: royaltyBps,
@@ -84,21 +95,26 @@ contract IdentityRegistry {
     /* ===================== DSU 身份登记 ===================== */
 
     function registerDSU(
+        DSU.DSUType dsuType,
         bytes32 versionHash,
         bytes32 paramsHash,
         bytes32 modelCID,
         uint16 royaltyBps,
-        address dsuOwner
+        address dsuOwner,
+        bytes32 proofHash
     ) external onlyOwner returns (bytes32 dsuId) {
         require(versionHash != bytes32(0), "vh 0");
         require(royaltyBps <= 10000, "royalty");
-        // dsuId 使用与 DSU.sol 一致的派生：类别在登记层忽略，原型以版本+参数+模型为准
-        dsuId = keccak256(abi.encode(versionHash, paramsHash, modelCID));
+        require(proofHash != bytes32(0), "proof 0");
+        // 与 DSU.sol 完全同源的派生：类别 + 版本 + 参数 + 模型（换任一维度即新身份）
+        dsuId = keccak256(abi.encode(dsuType, versionHash, paramsHash, modelCID));
         require(!dsus[dsuId].active, "dup dsu");
         dsus[dsuId] = DSUIdentity({
+            dsuType: dsuType,
             versionHash: versionHash,
             paramsHash: paramsHash,
             modelCID: modelCID,
+            proofHash: proofHash,
             royaltyBps: royaltyBps,
             owner: dsuOwner,
             active: true
@@ -116,6 +132,7 @@ contract IdentityRegistry {
         require(shareBps <= 10000, "share");
         // 防止自环
         require(parentId != childId, "self dep");
+        require(deps[parentId].length < MAX_DEPS, "too many deps");
         deps[parentId].push(Dependency({ childId: childId, shareBps: shareBps, active: true }));
         emit DependencyLinked(parentId, childId, shareBps);
     }
@@ -157,7 +174,19 @@ contract IdentityRegistry {
         return (d.active, d.owner, d.royaltyBps);
     }
 
-    /// @notice 组合版税分摊：返回 parent 自己的版税 + 直连依赖链的版税参数（用于 ETHER 结算）。
+    /// @notice 形式化验证证明哈希（v1.3 §3.4/§6.4）：调用者可在调用前校验。
+    ///         未知身份 revert（区别于"已注册但证明为 0"）。
+    function gateProofOf(bytes32 networkHash) external view returns (bytes32) {
+        require(gates[networkHash].active, "unknown gate");
+        return gates[networkHash].proofHash;
+    }
+
+    function dsuProofOf(bytes32 dsuId) external view returns (bytes32) {
+        require(dsus[dsuId].active, "unknown dsu");
+        return dsus[dsuId].proofHash;
+    }
+
+    /// @notice 返回该身份**自身**的版税参数（bps）。组合版税（含直连依赖）的分摊需链下按依赖图结算（原型）。
     function combinedRoyaltyBps(bytes32 id) external view returns (uint16 selfBps) {
         return _selfRoyalty(id);
     }
@@ -174,7 +203,7 @@ contract IdentityRegistry {
         return gates[id].active || dsus[id].active;
     }
 
-    /// @notice 跨链身份锚（whitepaper §7.2）：门级网络哈希可直接跨链一致解析；
+    /// @notice 跨链身份锚（whitepaper v1.3 §8.2）：门级网络哈希可直接跨链一致解析；
     ///         DSU 需版本+参数+模型共同锚定。返回身份类型编码 1=gate 2=dsu 0=unknown。
     function identityKind(bytes32 id) external view returns (uint8) {
         if (gates[id].active) return 1;

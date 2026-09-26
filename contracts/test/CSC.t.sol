@@ -2,7 +2,20 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {CSC} from "../src/CSC.sol";
+import {CSC, IContainerOwner} from "../src/CSC.sol";
+
+/// @notice 测试用所有权预言机：任何 id 都归 owner 所有。
+contract MockOwnerRegistry is IContainerOwner {
+    address public immutable owner;
+
+    constructor(address o) {
+        owner = o;
+    }
+
+    function ownerOf(uint256) external view override returns (address) {
+        return owner;
+    }
+}
 
 contract CSCTest is Test {
     CSC public csc;
@@ -24,7 +37,7 @@ contract CSCTest is Test {
         // time must be set BEFORE construction so the genesis epoch matches
         // and the history-checkpoint fill loop never runs over a huge gap
         vm.warp(1_000_000); // epoch 1_000_000
-        csc = new CSC(DEPTH, EPOCH, MAX_HOT, GRACE, BASE_RENT);
+        csc = new CSC(DEPTH, EPOCH, MAX_HOT, GRACE, BASE_RENT, address(new MockOwnerRegistry(alice)));
         rebuildLevels();
     }
 
@@ -91,7 +104,7 @@ contract CSCTest is Test {
         bytes32 data = keccak256("state-v1");
         submit(1, data);
 
-        (bytes32 dataHash, uint256 updatedAt, bool resolved, bool cold) = csc.containers(bytes32(uint256(1)));
+        (bytes32 dataHash, uint256 updatedAt, bool resolved, bool cold, ) = csc.containers(bytes32(uint256(1)));
         assertEq(dataHash, data);
         assertFalse(cold);
         assertFalse(resolved);
@@ -99,6 +112,14 @@ contract CSCTest is Test {
         assertEq(csc.currentRoot(), levels[DEPTH][0]);
         assertEq(csc.historyRoot(csc.currentEpoch()), csc.currentRoot());
         assertGt(updatedAt, 0);
+    }
+
+    function testSubmitByNonOwnerReverts() public {
+        // 授权回归：非容器所有者不得提交状态（Critical 修复）。
+        address bob = makeAddr("bob");
+        vm.prank(bob);
+        vm.expectRevert(CSC.NotContainerOwner.selector);
+        csc.submitState(1, keccak256("x"), emptyProof(), false);
     }
 
     function testUpdateState() public {
@@ -110,7 +131,7 @@ contract CSCTest is Test {
         csc.submitState(1, d2, proofFor(1), true);
         patchLeaf(1, d2);
 
-        (bytes32 dataHash, , bool resolved, bool cold) = csc.containers(bytes32(uint256(1)));
+        (bytes32 dataHash, , bool resolved, bool cold, ) = csc.containers(bytes32(uint256(1)));
         assertEq(dataHash, d2);
         assertTrue(resolved);
         assertFalse(cold);
@@ -139,7 +160,7 @@ contract CSCTest is Test {
         assertTrue(csc.verifyInclusion(keccak256("a"), 5, proofFor(5)));
         assertTrue(csc.verifyInclusion(keccak256("b"), 200, proofFor(200)));
         // id=5 unchanged
-        (bytes32 dataHash, , , ) = csc.containers(bytes32(uint256(5)));
+        (bytes32 dataHash, , , , ) = csc.containers(bytes32(uint256(5)));
         assertEq(dataHash, keccak256("a"));
     }
 
@@ -167,6 +188,37 @@ contract CSCTest is Test {
         vm.prank(alice);
         csc.payRent{value: 0.05 ether}(1, 5); // BASE_RENT * 5
         assertEq(csc.rentPaidUntilEpoch(bytes32(uint256(1))), epoch + 5);
+    }
+
+    function testWakeUpNotInArrearsRefunds() public {
+        // 未欠租时 wakeUp 不应吞掉 msg.value（此前会被永久锁死）
+        bytes32 data = keccak256("cold-state");
+        submit(1, data);
+        vm.warp(block.timestamp + (GRACE + 3));
+        csc.evict(bytes32(uint256(1))); // 未付费 → 可驱逐
+        vm.prank(alice);
+        csc.payRent{value: BASE_RENT * 2000}(1, 1000); // 冷却期预付（payRent 无 cold 检查）
+        uint256 before = alice.balance;
+        vm.prank(alice);
+        csc.wakeUp{value: 1 ether}(1, data, proofFor(1)); // 未欠租 → 全额退还
+        assertEq(alice.balance, before, "no charge when not in arrears");
+        (, , , bool cold, ) = csc.containers(bytes32(uint256(1)));
+        assertFalse(cold);
+    }
+
+    function testPayRentChargesArrears() public {
+        submit(1, keccak256("s"));
+        uint256 start = csc.currentEpoch();
+        vm.warp(block.timestamp + 5); // 拖欠 5 个 epoch
+        uint256 rate = csc.effectiveRentPerEpoch();
+        // 只付 1 个 epoch 不足以覆盖欠租 5 + 新增 1
+        vm.prank(alice);
+        vm.expectRevert("insufficient payment");
+        csc.payRent{value: rate}(1, 1);
+        // 付清欠租 5 + 新增 1
+        vm.prank(alice);
+        csc.payRent{value: rate * 6}(1, 1);
+        assertEq(csc.rentPaidUntilEpoch(bytes32(uint256(1))), start + 6);
     }
 
     function testPayRentRefundsOverpayment() public {
@@ -214,7 +266,7 @@ contract CSCTest is Test {
 
         vm.warp(block.timestamp + (GRACE + 2)); // now > epoch+1+2 -> evictable
         csc.evict(bytes32(uint256(1)));
-        (, , , bool cold) = csc.containers(bytes32(uint256(1)));
+        (, , , bool cold, ) = csc.containers(bytes32(uint256(1)));
         assertTrue(cold);
         assertEq(csc.hotCount(), 0);
     }
@@ -240,10 +292,10 @@ contract CSCTest is Test {
         vm.prank(alice);
         csc.wakeUp{value: BASE_RENT * 100}(1, data, proofFor(1));
 
-        (, , , bool cold) = csc.containers(bytes32(uint256(1)));
+        (, , , bool cold, ) = csc.containers(bytes32(uint256(1)));
         assertFalse(cold);
         assertEq(csc.hotCount(), 1);
-        (bytes32 dataHash2, , , ) = csc.containers(bytes32(uint256(1)));
+        (bytes32 dataHash2, , , , ) = csc.containers(bytes32(uint256(1)));
         assertEq(dataHash2, data);
     }
 
@@ -272,7 +324,7 @@ contract CSCTest is Test {
         // with enough value -> succeeds; no more arrears for rented span
         vm.prank(alice);
         csc.wakeUp{value: BASE_RENT * 100}(1, data, proofFor(1));
-        (, , , bool cold) = csc.containers(bytes32(uint256(1)));
+        (, , , bool cold, ) = csc.containers(bytes32(uint256(1)));
         assertFalse(cold);
     }
 

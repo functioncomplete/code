@@ -5,12 +5,13 @@ import {Script, console2} from "forge-std/Script.sol";
 import {ProofMarket} from "../src/ProofMarket.sol";
 
 /// @notice v2 M3 ProofMarket 链上验证脚本（真实交易；断言失败 => 整笔交易回滚）。
-/// @dev 部署账户同时扮演全部角色（requester/prover/验证者），验证完整生命周期：
+/// @dev 需两个账户：部署账户扮 requester/prover，另需 VERIFIER_PRIVATE_KEY 扮验证者
+///      （合约 v1.3 起禁止 prover/requester 自投，故验证者必须独立）。
 ///   参数回读 → 注册验证者 → 创建任务 → 质押 → 提交 → 投票 → 结算
 ///   正例：accept 达成 >2/3 → FINALIZED，证明者拿 reward-fee
-///   反例：reject 达成 >2/3 → SLASHED，质押全额罚没 + 禁赛，之后提交被拒
+///   反例：reject 达成 >2/3 → SLASHED，本任务保证金罚没 + 禁赛，之后提交被拒
 /// 用法：
-///   PM_ADDRESS=<addr> forge script script/VerifyProofMarket.s.sol \
+///   PM_ADDRESS=<addr> VERIFIER_PRIVATE_KEY=<pk2> forge script script/VerifyProofMarket.s.sol \
 ///     --rpc-url <rpc> --broadcast --private-key <pk>
 contract VerifyProofMarket is Script {
     // Task 槽位: 1 containerId, 2 functionId, 3 path, 4 inputHash, 5 outputHash,
@@ -28,7 +29,7 @@ contract VerifyProofMarket is Script {
         address pmAddr = vm.envAddress("PM_ADDRESS");
         ProofMarket pm = ProofMarket(pmAddr);
 
-        // ---- 1. 常量和参数回读（白皮书 §5.3）----
+        // ---- 1. 常量和参数回读（白皮书 v1.3 §6.3）----
         require(pm.VOTER_NUM() == 2, "V: voterNum");
         require(pm.VOTER_DEN() == 3, "V: voterDen");
         require(pm.FEE_BPS() == 50, "V: feeBps");
@@ -37,13 +38,17 @@ contract VerifyProofMarket is Script {
         require(pm.VOTING_WINDOW() == 3600, "V: window");
 
         uint256 pk = vm.envUint("DEPLOY_PRIVATE_KEY");
-        address deployer = vm.addr(pk); // 部署账户（同时扮演 requester/prover/验证者）
+        address deployer = vm.addr(pk); // 部署账户（requester/prover）
         require(pm.owner() == deployer, "V: owner");
+        // 验证者须为独立账户（合约禁止 prover/requester 自投）
+        uint256 vpk = vm.envUint("VERIFIER_PRIVATE_KEY");
+        address verifier = vm.addr(vpk);
+        require(verifier != deployer, "V: verifier must differ");
 
-        // ---- 2. 注册唯一验证者（单账户全角色演示；1/1 即 >2/3）----
-        if (!pm.validatorIndex(deployer)) {
+        // ---- 2. 注册唯一验证者（1/1 即 >2/3）----
+        if (!pm.validatorIndex(verifier)) {
             vm.broadcast(pk);
-            pm.registerValidator(deployer);
+            pm.registerValidator(verifier);
         }
         require(pm.validatorCount() == 1, "V: vc");
 
@@ -71,7 +76,7 @@ contract VerifyProofMarket is Script {
         pm.submitProof(idA, p);
         require(_status(pm, idA) == ProofMarket.TaskStatus.SUBMITTED, "V: A submitted");
 
-        vm.broadcast(pk);
+        vm.broadcast(vpk);
         pm.vote(idA, true);
         require(_acceptVotes(pm, idA) == 1, "V: A vote");
 
@@ -96,7 +101,7 @@ contract VerifyProofMarket is Script {
         vm.broadcast(pk);
         pm.submitProof(idB, pB); // 假造 output（任务无期望输出，放行后被验证者识破）
 
-        vm.broadcast(pk);
+        vm.broadcast(vpk);
         pm.vote(idB, false);
         vm.broadcast(pk);
         pm.settle(idB);

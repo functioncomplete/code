@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /// @title Container — FCT 计算容器账户
-/// @notice 容器的核心状态单元（白皮书 §4.1）。每个容器是一枚容器 NFT 持有的链上
+/// @notice 容器的核心状态单元（白皮书 v1.3 §5.1）。每个容器是一枚容器 NFT 持有的链上
 ///         账户，持有：资产余额、DSU 引用、FCT 函数引用、私有状态承诺、管理权限、
 ///         AI 服务（模型 CID / 推理价格 / 收益地址）。
 /// @dev 管理员（admin）默认跟随容器 NFT 持有者：ContainerNFT 转移时调用
@@ -46,7 +46,7 @@ contract Container {
     bytes32 public privateStateCommitment;
 
     // ------------------------------------------------------------------
-    // AI 服务（白皮书 §4.1）
+    // AI 服务（白皮书 v1.3 §5.1）
     // ------------------------------------------------------------------
     bytes32 public modelCID; // 模型内容标识
     uint256 public inferencePrice; // 每次推理费用（wei）
@@ -84,13 +84,39 @@ contract Container {
         _;
     }
 
+    /// @notice 重入锁（防恶意 ERC20 在 transfer/transferFrom 中重入）。
+    uint256 private _locked = 1;
+    modifier nonReentrant() {
+        require(_locked == 1, "Container: reentrant");
+        _locked = 2;
+        _;
+        _locked = 1;
+    }
+
+    /// @notice 读取 ERC20 余额（要求代币实现 balanceOf）。
+    function _tokenBalanceOf(address token, address who) private view returns (uint256) {
+        (bool ok, bytes memory ret) =
+            token.staticcall(abi.encodeWithSignature("balanceOf(address)", who));
+        require(ok && ret.length >= 32, "Container: balanceOf failed");
+        return abi.decode(ret, (uint256));
+    }
+
+    /// @notice 调用 ERC20 并校验成功：兼容返回 bool 与无返回值两种代币。
+    function _safeTokenCall(address token, bytes memory data) private {
+        (bool ok, bytes memory ret) = token.call(data);
+        require(ok && (ret.length == 0 || abi.decode(ret, (bool))), "Container: token call failed");
+    }
+
     // ------------------------------------------------------------------
-    // 权限联动：NFT 转移时由 ContainerNFT 调用（白皮书 §4.1）
+    // 权限联动：NFT 转移时由 ContainerNFT 调用（白皮书 v1.3 §5.1）
     // ------------------------------------------------------------------
     function onNFTTransfer(address newAdmin) external {
         require(msg.sender == nft, "Container: only NFT contract");
         require(newAdmin != address(0), "Container: zero admin");
         admin = newAdmin;
+        // 收益地址随 NFT 转移（白皮书 v1.3 §5.1 / ARCHITECTURE §3「收益随之转移」）；
+        // 否则旧主在卖出容器后仍继续领取推理收益（rug）。
+        beneficiary = newAdmin;
         emit AdminChanged(newAdmin);
     }
 
@@ -108,7 +134,7 @@ contract Container {
     }
 
     /// @notice 管理员提取 ETH（容器账户语义：admin 是容器主人）
-    function withdrawETH(uint256 amount) external onlyAdmin {
+    function withdrawETH(uint256 amount) external onlyAdmin nonReentrant {
         require(amount <= address(this).balance, "Container: insufficient balance");
         (bool ok, ) = payable(admin).call{value: amount}("");
         require(ok, "Container: ETH transfer failed");
@@ -119,31 +145,34 @@ contract Container {
     // 资产（ERC-20）
     // ------------------------------------------------------------------
     /// @notice 存入 ERC-20（任何人可存入，类似收款地址）
-    function depositToken(address token, uint256 amount) external {
+    function depositToken(address token, uint256 amount) external nonReentrant {
         require(token != address(0), "Container: zero token");
-        (bool ok, ) = token.call(
+        // 以余额差记账：fee-on-transfer / 假充值代币不会虚增余额。
+        uint256 before = _tokenBalanceOf(token, address(this));
+        _safeTokenCall(
+            token,
             abi.encodeWithSignature(
                 "transferFrom(address,address,uint256)", msg.sender, address(this), amount
             )
         );
-        require(ok, "Container: token deposit failed");
-        tokenBalances[token] += amount;
+        uint256 received = _tokenBalanceOf(token, address(this)) - before;
+        require(received > 0, "Container: no tokens received");
+        tokenBalances[token] += received;
     }
 
     /// @notice 管理员提取 ERC-20
-    function withdrawToken(address token, uint256 amount) external onlyAdmin {
+    function withdrawToken(address token, uint256 amount) external onlyAdmin nonReentrant {
         require(token != address(0), "Container: zero token");
         require(amount <= tokenBalances[token], "Container: insufficient token balance");
         tokenBalances[token] -= amount;
-        (bool ok, ) = token.call(
-            abi.encodeWithSignature("transfer(address,uint256)", admin, amount)
+        _safeTokenCall(
+            token, abi.encodeWithSignature("transfer(address,uint256)", admin, amount)
         );
-        require(ok, "Container: token transfer failed");
         emit TokenWithdrawn(token, admin, amount);
     }
 
     // ------------------------------------------------------------------
-    // 引用管理（白皮书 §4.1：容器允许调用哪些执行单元/函数）
+    // 引用管理（白皮书 v1.3 §5.1：容器允许调用哪些执行单元/函数）
     // ------------------------------------------------------------------
     function addDsuRef(bytes32 ref) external onlyAdmin {
         require(ref != bytes32(0), "Container: zero ref");
@@ -197,7 +226,7 @@ contract Container {
     }
 
     // ------------------------------------------------------------------
-    // 私有状态（白皮书 §4.2：以压缩状态承诺叶子形式存储）
+    // 私有状态（白皮书 v1.3 §5.2：以压缩状态承诺叶子形式存储）
     // ------------------------------------------------------------------
     function setPrivateState(bytes32 commitment) external onlyAdmin {
         privateStateCommitment = commitment;
@@ -205,7 +234,7 @@ contract Container {
     }
 
     // ------------------------------------------------------------------
-    // AI 服务（白皮书 §4.1）
+    // AI 服务（白皮书 v1.3 §5.1）
     // ------------------------------------------------------------------
     function setAiService(bytes32 _modelCID, uint256 _inferencePrice, address _beneficiary) external onlyAdmin {
         require(_modelCID != bytes32(0), "Container: zero modelCID");
@@ -217,13 +246,16 @@ contract Container {
 
     /// @notice 付费推理：费用沉淀为容器收益，受益地址自动收款
     /// @dev 单价 0 时允许免费推理（不校验金额）；超出部分随多付金额返还
-    function payInference() external payable {
+    function payInference() external payable nonReentrant {
         require(msg.value >= inferencePrice, "Container: insufficient inference fee");
         uint256 revenue = inferencePrice;
         uint256 refund = msg.value - inferencePrice;
         if (revenue > 0) {
             totalRevenue += revenue;
             emit RevenueAccrued(msg.sender, revenue);
+            // 白皮书 v1.3 §5.1「收益地址」：推理费直接支付给受益地址（此前只记账不支付）
+            (bool ok, ) = payable(beneficiary).call{ value: revenue }("");
+            require(ok, "Container: beneficiary pay failed");
         }
         emit PaidInference(msg.sender, revenue, refund);
         if (refund > 0) {

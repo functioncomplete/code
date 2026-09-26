@@ -121,7 +121,7 @@ contract IdentityRegistryTest is Test {
     }
 
     function testRegisterGate() public {
-        reg.registerGate(netHashA, ioSpec, 36, 9, 250, makeAddr("creator"));
+        reg.registerGate(netHashA, ioSpec, 36, 9, 250, makeAddr("creator"), keccak256("gateproof"));
         (bool ok, address o, uint32 g, uint16 r) = reg.checkGate(netHashA);
         assertTrue(ok);
         assertEq(o, makeAddr("creator"));
@@ -131,7 +131,7 @@ contract IdentityRegistryTest is Test {
     }
 
     function testRegisterDSUIdentity() public {
-        bytes32 id = reg.registerDSU(dsuVh, dsuPh, model, 500, makeAddr("dsuDev"));
+        bytes32 id = reg.registerDSU(DSU.DSUType.SIGN, dsuVh, dsuPh, model, 500, makeAddr("dsuDev"), keccak256("dsuproof"));
         (bool ok, address o, uint16 r) = reg.checkDSU(id);
         assertTrue(ok);
         assertEq(o, makeAddr("dsuDev"));
@@ -139,15 +139,52 @@ contract IdentityRegistryTest is Test {
         assertEq(reg.identityKind(id), 2);
     }
 
+    function testDsuIdMatchesDsuContract() public {
+        // 回归：IdentityRegistry 与 DSU.sol 必须派生同一 dsuId（跨合约身份锚），
+        // 否则登记层的版税/依赖与执行层永不交集。
+        bytes32 vh = keccak256("ver");
+        bytes32 ph = keccak256("par");
+        bytes32 mc = keccak256("model");
+        DSU d0 = new DSU();
+        bytes32 idA = d0.registerDSU(DSU.DSUType.HASH, vh, ph, mc, address(0), 1000);
+        bytes32 idB = reg.registerDSU(DSU.DSUType.HASH, vh, ph, mc, 0, address(this), keccak256("dsuproof"));
+        assertEq(idA, idB, "dsuId derivation mismatch across contracts");
+    }
+
+    function testProofHashBoundToIdentity() public {
+        // v1.3 §3.4/§6.4：形式化验证证明（spec/gateproof）须与身份绑定，可先验证
+        bytes32 gproof = keccak256("gateproof-v1");
+        reg.registerGate(netHashA, ioSpec, 36, 9, 250, makeAddr("creator"), gproof);
+        assertEq(reg.gateProofOf(netHashA), gproof);
+
+        bytes32 dproof = keccak256("dsuproof-v1");
+        bytes32 d = reg.registerDSU(DSU.DSUType.SIGN, dsuVh, dsuPh, model, 500, makeAddr("dsuDev"), dproof);
+        assertEq(reg.dsuProofOf(d), dproof);
+    }
+
+    function testDepsCapEnforced() public {
+        // royaltySchedule 有界：单身份依赖数不超过 MAX_DEPS
+        bytes32 parent = reg.registerGate(netHashA, ioSpec, 36, 9, 250, makeAddr("c"), keccak256("gateproof"));
+        for (uint256 i = 0; i < reg.MAX_DEPS(); i++) {
+            bytes32 child = keccak256(abi.encode("child", i));
+            reg.registerGate(child, ioSpec, 1, 1, 0, makeAddr("c"), keccak256("gateproof"));
+            reg.linkDependency(parent, child, 100);
+        }
+        bytes32 extra = keccak256("extra-child");
+        reg.registerGate(extra, ioSpec, 1, 1, 0, makeAddr("c"), keccak256("gateproof"));
+        vm.expectRevert("too many deps");
+        reg.linkDependency(parent, extra, 100);
+    }
+
     function testDupGateReverts() public {
-        reg.registerGate(netHashA, ioSpec, 36, 9, 250, makeAddr("creator"));
+        reg.registerGate(netHashA, ioSpec, 36, 9, 250, makeAddr("creator"), keccak256("gateproof"));
         vm.expectRevert(bytes("dup gate"));
-        reg.registerGate(netHashA, ioSpec, 40, 10, 250, makeAddr("other"));
+        reg.registerGate(netHashA, ioSpec, 40, 10, 250, makeAddr("other"), keccak256("gateproof"));
     }
 
     function testLinkRoyaltySchedule() public {
-        bytes32 g = reg.registerGate(netHashA, ioSpec, 36, 9, 300, makeAddr("creator"));
-        bytes32 d = reg.registerDSU(dsuVh, dsuPh, model, 500, makeAddr("dsuDev"));
+        bytes32 g = reg.registerGate(netHashA, ioSpec, 36, 9, 300, makeAddr("creator"), keccak256("gateproof"));
+        bytes32 d = reg.registerDSU(DSU.DSUType.SIGN, dsuVh, dsuPh, model, 500, makeAddr("dsuDev"), keccak256("dsuproof"));
         reg.linkDependency(g, d, 400); // adder4 依赖 eddsa DSU，40% 分成
         (bytes32[] memory ids, uint16[] memory shares) = reg.royaltySchedule(g);
         assertEq(ids.length, 1);
@@ -157,8 +194,8 @@ contract IdentityRegistryTest is Test {
     }
 
     function testRoyaltyScheduleHidesDisabled() public {
-        bytes32 g = reg.registerGate(netHashA, ioSpec, 36, 9, 300, makeAddr("creator"));
-        bytes32 d = reg.registerDSU(dsuVh, dsuPh, model, 500, makeAddr("dsuDev"));
+        bytes32 g = reg.registerGate(netHashA, ioSpec, 36, 9, 300, makeAddr("creator"), keccak256("gateproof"));
+        bytes32 d = reg.registerDSU(DSU.DSUType.SIGN, dsuVh, dsuPh, model, 500, makeAddr("dsuDev"), keccak256("dsuproof"));
         reg.linkDependency(g, d, 400);
         reg.disableDependency(g, 0);
         (bytes32[] memory ids, ) = reg.royaltySchedule(g);
@@ -166,13 +203,13 @@ contract IdentityRegistryTest is Test {
     }
 
     function testLinkConstraints() public {
-        bytes32 g = reg.registerGate(netHashA, ioSpec, 36, 9, 300, makeAddr("creator"));
+        bytes32 g = reg.registerGate(netHashA, ioSpec, 36, 9, 300, makeAddr("creator"), keccak256("gateproof"));
         vm.expectRevert(bytes("self dep"));
         reg.linkDependency(g, g, 100);
         vm.expectRevert(bytes("unknown parent"));
         reg.linkDependency(keccak256("ghost"), g, 100);
         // share 超限但 child 也未知：合约先检查 child 已知性，用已登记 DSU 测试 share 校验
-        bytes32 d = reg.registerDSU(dsuVh, dsuPh, model, 500, makeAddr("dsuDev"));
+        bytes32 d = reg.registerDSU(DSU.DSUType.SIGN, dsuVh, dsuPh, model, 500, makeAddr("dsuDev"), keccak256("dsuproof"));
         vm.expectRevert(bytes("share"));
         reg.linkDependency(g, d, 10_001);
     }

@@ -335,10 +335,11 @@ contract ProofMarketTest is Test {
 
         pm.settle(id);
 
-        // stake 0.02 全罚没：50% 给 requester，50% 给 reject 验证者平分
-        assertEq(requester.balance, reqBefore + 0.01 ether);
-        assertEq(v1.balance + v2.balance + v3.balance, v1Before + v2Before + v3Before + 0.01 ether);
-        assertEq(pm.proverStakes(prover), 0);
+        // 逐任务保证金 = MIN_STAKE = 0.01：50% 给 requester，50% 给 reject 验证者平分；
+        // 同时归还托管的 1 ether 奖励
+        assertEq(requester.balance, reqBefore + 1 ether + 0.005 ether);
+        assertEq(v1.balance + v2.balance + v3.balance, v1Before + v2Before + v3Before + 0.005 ether);
+        assertEq(pm.proverStakes(prover), 0.01 ether); // 只没收本任务保证金（0.02 - 0.01）
         assertTrue(pm.banned(prover));
         assertEq(uint256(statusOf(id)), uint256(ProofMarket.TaskStatus.SLASHED));
     }
@@ -358,6 +359,88 @@ contract ProofMarketTest is Test {
     }
 
     /* ---------- no majority / reopen ---------- */
+
+    function testUnstakeBlockedWhileTaskPending() public {
+        makeTask();
+        submitValid(); // prover 质押被锁定
+
+        vm.prank(prover);
+        vm.expectRevert("stake locked");
+        pm.unstake();
+
+        // 无票 + 窗口结束 -> settle 走 reopen 分支，释放锁
+        vm.warp(block.timestamp + WINDOW + 1);
+        pm.settle(1);
+
+        vm.prank(prover);
+        pm.unstake();
+        assertEq(pm.proverStakes(prover), 0);
+    }
+
+    function testVoteAfterWindowReverts() public {
+        uint256 id = makeTask();
+        submitValid();
+        vm.warp(block.timestamp + WINDOW + 1);
+        vm.prank(v1);
+        vm.expectRevert("window closed");
+        pm.vote(id, true);
+    }
+
+    function testReRegisteredValidatorCanVoteAgain() public {
+        // 注销 + 重注册后，旧票因代次变化失效，v1 可再次投票（否则会被 "voted" 拦截）
+        uint256 id = makeTask();
+        submitValid();
+        voteAccept(v1, id);
+        pm.unregisterValidator(v1);
+        pm.registerValidator(v1);
+        vm.prank(v1);
+        pm.vote(id, true);
+        assertEq(pm.voteGen(id, v1), pm.validatorGen(v1));
+    }
+
+    function testProverCannotVote() public {
+        // 证明者/需求方即使被登记为验证者也不得自投（防自证）
+        uint256 id = makeTask();
+        submitValid();
+        pm.registerValidator(prover);
+        vm.prank(prover);
+        vm.expectRevert("prover cannot vote");
+        pm.vote(id, true);
+    }
+
+    function testPerTaskBondIsolation() public {
+        // 并发两份任务：reject 任务1 只没收其 0.01 保证金，任务2 保证金不受影响
+        uint256 id1 = makeTask();
+        uint256 id2 = makeTask();
+        stakeProver(); // 0.02
+        vm.prank(prover);
+        pm.submitProof(id1, proofOf(OUTPUT));
+        vm.prank(prover);
+        pm.submitProof(id2, proofOf(OUTPUT));
+        assertEq(pm.lockedBond(prover), 0.02 ether, "two tasks lock 0.02");
+        voteReject(v1, id1);
+        voteReject(v2, id1);
+        voteReject(v3, id1);
+        pm.settle(id1);
+        assertEq(pm.proverStakes(prover), 0.01 ether, "only task1 bond slashed");
+        assertEq(pm.lockedBond(prover), 0.01 ether, "task2 bond still locked");
+    }
+
+    function testUnregisterRemovesValidatorNoDuplicate() public {
+        // 注销后从数组移除，重注册不产生重复项（重复项会被重复付款并操纵 quorum）
+        pm.unregisterValidator(v4);
+        assertEq(pm.validatorCount(), 3);
+        pm.registerValidator(v4);
+        assertEq(pm.validatorCount(), 4);
+
+        uint256 id = makeTask();
+        submitValid();
+        voteAccept(v1, id);
+        voteAccept(v2, id);
+        voteAccept(v3, id);
+        pm.settle(id); // 4 个验证者中 3 accept > 2/3 -> FINALIZED，无重复付款
+        assertEq(uint256(statusOf(id)), uint256(ProofMarket.TaskStatus.FINALIZED));
+    }
 
     function testNoMajorityReopensAfterWindow() public {
         uint256 id = makeTask();
