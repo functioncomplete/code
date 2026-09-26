@@ -23,6 +23,7 @@
     'nav.whitepaper': 'Whitepaper',
     'nav.gatelang': 'GateLang',
     'nav.gatelangSec': 'GateLang',
+    'nav.gatelangRepo': 'GateLang repo',
 
     /* hero */
     'hero.badge': 'FCT v2 · Technical component kit · Not an L2, not a token',
@@ -77,6 +78,7 @@
     'gl.r4n': 'L4 visual',
     'gl.r4v': 'Education users / PMs → auto-generated L1/L2 code (FCT function NFT / container NFT)',
     'gl.dl': 'Download GateLang whitepaper v2.1',
+    'gl.repo': 'GateLang repository (GitHub)',
     'gl.toProvable': 'See the proof path',
 
     /* components */
