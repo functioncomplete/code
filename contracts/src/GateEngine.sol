@@ -57,13 +57,18 @@ contract GateEngine {
     mapping(bytes32 => uint16[]) public nextSigsOf; // LATCH 下一状态信号（长度 = L）
 
     uint256 public fnCount;
-    /// @notice 登记/退役的治理地址（与 DSU / IdentityRegistry / PrimitiveSelector 同级的 owner）。
+    /// @notice 治理地址（与 DSU / IdentityRegistry / PrimitiveSelector 同级的 owner）。
     ///         登记若开放无权限，"首个登记者"可抢跑并调用 disableFunction **永久退役**他人函数
     ///         → 把合法函数与所有使用者锁死。故登记与退役均为 owner 门控。
-    address public immutable owner;
+    ///         非 immutable：支持**两步移交**给多签 / 时间锁 / DAO（见 transferOwnership）。
+    address public owner;
+    /// @notice 待接任的 owner（两步移交的中间态）。
+    address public pendingOwner;
 
     event FunctionRegistered(bytes32 indexed fnId, uint32 signalCount, uint32 gateCount, uint32 depth, uint16 inputCount, uint16 latchCount);
     event FunctionDisabled(bytes32 indexed fnId);
+    event OwnershipTransferStarted(address indexed from, address indexed to);
+    event OwnershipTransferred(address indexed from, address indexed to);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "not owner");
@@ -72,6 +77,25 @@ contract GateEngine {
 
     constructor() {
         owner = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
+    }
+
+    /* ============================ 两步所有权移交 ============================ */
+    /// @notice 第一步：当前 owner 提名接任者（不立即生效，避免误转到错误地址后无法挽回）。
+    ///         生产部署建议把 owner 交给多签（Safe）或时间锁，以消除单一 key 的中心化风险。
+    function transferOwnership(address newOwner) external onlyOwner {
+        require(newOwner != address(0), "zero owner");
+        pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner, newOwner);
+    }
+
+    /// @notice 第二步：接任者接受（唯一能完成移交的地址）。
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "not pending");
+        address old = owner;
+        owner = pendingOwner;
+        pendingOwner = address(0);
+        emit OwnershipTransferred(old, owner);
     }
 
     /* ============================ 登记 ============================ */

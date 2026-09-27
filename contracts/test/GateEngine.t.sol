@@ -384,4 +384,43 @@ contract GateEngineTest is Test {
         vm.expectRevert("unknown");
         ge.disableFunction(id);
     }
+
+    /* ==================== 两步所有权移交（多签/DAO 移交通道） ==================== */
+
+    function test_two_step_transfer() public {
+        address next = address(0xA11CE);
+        ge.transferOwnership(next);
+        assertEq(ge.pendingOwner(), next, "pending set");
+        assertEq(ge.owner(), address(this), "not yet effective");
+
+        vm.prank(address(0xBAD));
+        vm.expectRevert("not pending");
+        ge.acceptOwnership();
+
+        vm.prank(next);
+        ge.acceptOwnership();
+        assertEq(ge.owner(), next, "transferred");
+        assertEq(ge.pendingOwner(), address(0), "pending cleared");
+
+        // 旧 owner 失去权限
+        (uint32[] memory prog, uint16[] memory outs, uint16[] memory nexts, uint32 depth) = _buildAdd4();
+        vm.expectRevert("not owner");
+        ge.registerFunction(8, 0, prog, outs, nexts, depth);
+
+        // 新 owner 拥有权限
+        vm.prank(next);
+        bytes32 id = ge.registerFunction(8, 0, prog, outs, nexts, depth);
+        assertTrue(ge.isActive(id));
+    }
+
+    function test_transfer_zero_owner_reverts() public {
+        vm.expectRevert("zero owner");
+        ge.transferOwnership(address(0));
+    }
+
+    function test_transfer_only_owner() public {
+        vm.prank(address(0xBAD));
+        vm.expectRevert("not owner");
+        ge.transferOwnership(address(0xA11CE));
+    }
 }
