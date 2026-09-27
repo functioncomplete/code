@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {DSU} from "./DSU.sol";
+import {IDSUImpl} from "./interfaces/IDSUImpl.sol";
 
 /// @title DSURuntime
 /// @notice FCT v2 DSU 执行引擎（whitepaper v1.3 §4.2 / dev-plan §5.3）——DSU 交付。
@@ -10,7 +11,8 @@ import {DSU} from "./DSU.sol";
 ///         本合约承载**执行**：按类别运行参考实现，并做**真实步数计量**
 ///         （替换此前无许可 no-op 的 `DSU.consumeSteps` 占位：执行超出 maxSteps 直接 revert）。
 ///
-///         只读执行（view）：不写外部状态、无外部调用（除 keccak/sha256/ecrecover 原语）、
+///         只读执行（view）：不写外部状态；除 keccak/sha256/ecrecover 原语外，仅在 DSU 登记了
+///         `impl` 时经 **staticcall** 委派到该实现（治理登记，见 IDSUImpl）、
 ///         无重入面。状态修改仍由容器层根据输出统一执行（§4.2「只读执行」）。
 ///
 ///         输入编码（`bytes input`，首字节为类别内选择子）：
@@ -25,6 +27,7 @@ contract DSURuntime {
     error BudgetExceeded(uint256 steps, uint256 maxSteps);
     error UnknownDSU(bytes32 dsuId);
     error BadInput();
+    error ImplFailed(address impl);
 
     constructor(DSU _dsu) {
         dsu = _dsu;
@@ -39,8 +42,13 @@ contract DSURuntime {
         view
         returns (bytes memory output, uint256 steps)
     {
-        (bool ok, uint256 maxSteps, DSU.DSUType t) = _load(dsuId);
+        (bool ok, uint256 maxSteps, DSU.DSUType t, address impl) = _load(dsuId);
         if (!ok) revert UnknownDSU(dsuId);
+
+        // 治理登记的显式实现（预编译/运行时）优先；staticcall 保证只读
+        if (impl != address(0)) {
+            return _callImpl(impl, input, maxSteps);
+        }
 
         if (t == DSU.DSUType.HASH) {
             (output, steps) = _hash(input, maxSteps);
@@ -59,7 +67,7 @@ contract DSURuntime {
 
     /// @notice 只查询步数预算与类别（不执行）。
     function budgetOf(bytes32 dsuId) external view returns (uint256 maxSteps, DSU.DSUType t, bool registered) {
-        (bool ok, uint256 ms, DSU.DSUType ty) = _load(dsuId);
+        (bool ok, uint256 ms, DSU.DSUType ty,) = _load(dsuId);
         return (ms, ty, ok);
     }
 
@@ -171,9 +179,28 @@ contract DSURuntime {
     function _load(bytes32 dsuId)
         private
         view
-        returns (bool ok, uint256 maxSteps, DSU.DSUType t)
+        returns (bool ok, uint256 maxSteps, DSU.DSUType t, address impl)
     {
-        (DSU.DSUType dsuType,,,,, uint256 ms, bool registered) = dsu.records(dsuId);
-        return (registered, ms, dsuType);
+        (DSU.DSUType dsuType,,,, address im, uint256 ms, bool registered) = dsu.records(dsuId);
+        return (registered, ms, dsuType, im);
+    }
+
+    /// @notice 委派到治理登记的 DSU 实现（staticcall，失败/超预算均 fail-closed）。
+    function _callImpl(address impl, bytes calldata input, uint256 maxSteps)
+        private
+        view
+        returns (bytes memory output, uint256 steps)
+    {
+        (bool ok, bytes memory ret) =
+            impl.staticcall(abi.encodeWithSelector(IDSUImpl.execute.selector, input));
+        if (!ok) {
+            // 冒泡实现自身的原因（便于排障）；无原因时回落到 ImplFailed
+            if (ret.length == 0) revert ImplFailed(impl);
+            assembly {
+                revert(add(ret, 0x20), mload(ret))
+            }
+        }
+        (output, steps) = abi.decode(ret, (bytes, uint256));
+        if (steps > maxSteps) revert BudgetExceeded(steps, maxSteps);
     }
 }

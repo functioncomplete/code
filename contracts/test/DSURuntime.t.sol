@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import { Test } from "forge-std/Test.sol";
 import { DSU } from "../src/DSU.sol";
 import { DSURuntime } from "../src/DSURuntime.sol";
+import { IDSUImpl } from "../src/interfaces/IDSUImpl.sol";
 
 /// @title DSURuntime.t — DSU 执行引擎（whitepaper v1.3 §4.2，DSU 交付）
 contract DSURuntimeTest is Test {
@@ -19,6 +20,10 @@ contract DSURuntimeTest is Test {
 
     function _reg(DSU.DSUType t, bytes32 params, uint256 maxSteps) internal returns (bytes32) {
         return dsu.registerDSU(t, V1, params, bytes32(0), address(0), maxSteps);
+    }
+
+    function _regWith(DSU.DSUType t, bytes32 params, address impl, uint256 maxSteps) internal returns (bytes32) {
+        return dsu.registerDSU(t, V1, params, bytes32(0), impl, maxSteps);
     }
 
     /* ==================== HASH ==================== */
@@ -301,5 +306,86 @@ contract DSURuntimeTest is Test {
         );
         vm.expectRevert(DSURuntime.BadInput.selector);
         rt.execute(id, maxS);
+    }
+
+    /* ==================== impl 路由（预编译/外部实现） ==================== */
+
+    function test_impl_routing_overrides_builtin() public {
+        MockDSUImpl impl = new MockDSUImpl(abi.encode(uint256(42)), 3, false);
+        // 类别声明 HASH，但 impl 返回 42（内建 keccak 不可能得到 42）→ 证明走了 impl
+        bytes32 id = _regWith(DSU.DSUType.HASH, keccak256("impl"), address(impl), 10);
+        (bytes memory out, uint256 steps) = rt.execute(id, abi.encodePacked(uint8(0), bytes("x")));
+        assertEq(abi.decode(out, (uint256)), 42, "impl result");
+        assertEq(steps, 3, "impl steps");
+    }
+
+    function test_impl_revert_is_fail_closed() public {
+        // 有原因 → 冒泡实现自身的原因（便于排障）
+        MockDSUImpl impl = new MockDSUImpl(abi.encode(uint256(1)), 1, true);
+        bytes32 id = _regWith(DSU.DSUType.HASH, keccak256("impl2"), address(impl), 10);
+        vm.expectRevert(bytes("impl boom"));
+        rt.execute(id, abi.encodePacked(uint8(0)));
+        // 无原因 → 回落到 ImplFailed
+        SilentFailImpl silent = new SilentFailImpl();
+        bytes32 id2 = _regWith(DSU.DSUType.HASH, keccak256("impl2b"), address(silent), 10);
+        vm.expectRevert(abi.encodeWithSelector(DSURuntime.ImplFailed.selector, address(silent)));
+        rt.execute(id2, abi.encodePacked(uint8(0)));
+    }
+
+    function test_impl_over_budget_rejected() public {
+        MockDSUImpl impl = new MockDSUImpl(abi.encode(uint256(1)), 99, false);
+        bytes32 id = _regWith(DSU.DSUType.HASH, keccak256("impl3"), address(impl), 5);
+        vm.expectRevert(abi.encodeWithSelector(DSURuntime.BudgetExceeded.selector, uint256(99), uint256(5)));
+        rt.execute(id, abi.encodePacked(uint8(0)));
+    }
+
+    /// 试图写状态的实现会被 staticcall 挡下 → ImplFailed（执行链保持只读）。
+    function test_impl_state_write_blocked_by_staticcall() public {
+        StatefulImpl bad = new StatefulImpl();
+        bytes32 id = _regWith(DSU.DSUType.HASH, keccak256("impl4"), address(bad), 100);
+        vm.expectRevert(); // staticcall 下写状态必失败（原因由 EVM 决定）
+        rt.execute(id, abi.encodePacked(uint8(0)));
+    }
+
+    /// impl=0 时仍走内建参考实现。
+    function test_impl_zero_uses_builtin() public {
+        bytes32 id = _reg(DSU.DSUType.ARITH, keccak256("builtin"), 1000);
+        (bytes memory out,) = rt.execute(id, abi.encodePacked(uint8(0), bytes32(uint256(3)), bytes32(uint256(4)), bytes32(uint256(5))));
+        assertEq(abi.decode(out, (uint256)), 2, "(3+4) mod 5 builtin");
+    }
+}
+
+/// @dev 正常的外部实现桩：返回预设输出与步数。
+contract MockDSUImpl is IDSUImpl {
+    bytes private _ret;
+    uint256 private _steps;
+    bool private _revert;
+
+    constructor(bytes memory ret, uint256 steps, bool shouldRevert) {
+        _ret = ret;
+        _steps = steps;
+        _revert = shouldRevert;
+    }
+
+    function execute(bytes calldata) external view returns (bytes memory, uint256) {
+        require(!_revert, "impl boom");
+        return (_ret, _steps);
+    }
+}
+
+/// @dev 无原因回滚的实现 → 应折为 ImplFailed。
+contract SilentFailImpl {
+    function execute(bytes calldata) external view returns (bytes memory, uint256) {
+        revert();
+    }
+}
+
+/// @dev 试图写状态的实现：staticcall 下必须失败。
+contract StatefulImpl {
+    uint256 public counter;
+
+    function execute(bytes calldata) external returns (bytes memory, uint256) {
+        counter += 1; // 非 view → staticcall 必失败
+        return (abi.encode(counter), 1);
     }
 }
