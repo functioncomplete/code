@@ -14,3 +14,4 @@ __pycache__/
 *.env
 # 内部部署脚本（含内网主机/用户名/SSH 密钥路径）
 deploy/
+.gstack/

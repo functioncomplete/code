@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FunctionComplete (FCT) — 技术组件套件 · 门级函数 + 状态容器</title>
-<meta name="description" content="FCT 不是一条链、不是一个代币、不是 L2 —— 它是一套链上计算与状态管理技术组件：以 NAND + LATCH 门级函数承担计算，以容器 + CSC 承担状态，由 Ethercoin 团队构建。任何想提供可靠链上计算服务的网络的理想组件。">
+<title>FunctionComplete (FCT) — 逻辑状态机（LSM）技术组件套件</title>
+<meta name="description" content="FCT 不是一条链、不是一个代币、不是 L2 —— 它是 Ethercoin 团队维护的链上计算与状态技术组件套件。FCT 提供的核心技术叫逻辑状态机（Logical State Machine, LSM）：以 NAND 纯函数原语承担计算，以 LATCH 状态原语承担记忆，组合部分为布尔函数，时序部分为有限状态机。">
 <meta name="theme-color" content="#070b12">
 <link rel="stylesheet" href="css/style.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23070b12'/><path d='M8 10h5l2 3-2 3H8z' fill='none' stroke='%2322d3ee' stroke-width='2'/><rect x='17' y='9' width='9' height='9' rx='2' fill='none' stroke='%2334d399' stroke-width='2'/><rect x='17' y='20' width='9' height='9' rx='2' fill='none' stroke='%23a78bfa' stroke-width='2'/></svg>">
@@ -23,12 +23,14 @@
       <span class="brand-text">Function<b>Complete</b></span>
     </a>
     <nav class="nav-links" aria-label="主导航">
+      <a href="#positioning" data-i18n="nav.positioning">定位</a>
+      <a href="#terminology" data-i18n="nav.terminology">术语</a>
       <a href="#primitives" data-i18n="nav.primitives">双原语</a>
+      <a href="#architecture" data-i18n="nav.architecture">架构</a>
       <a href="#gatelang" data-i18n="nav.gatelangSec">GateLang</a>
       <a href="#components" data-i18n="nav.components">组件</a>
-      <a href="#container" data-i18n="nav.container">容器</a>
-      <a href="#provable" data-i18n="nav.provable">证明</a>
-      <a href="#economy" data-i18n="nav.economy">经济</a>
+      <a href="#security" data-i18n="nav.security">安全</a>
+      <a href="#applications" data-i18n="nav.applications">应用</a>
       <a href="#roadmap" data-i18n="nav.roadmap">路线图</a>
     </nav>
     <div class="nav-actions">
@@ -77,32 +79,133 @@
   <div class="wrap hero-inner">
     <div class="badge reveal">
       <span class="pulse" aria-hidden="true"></span>
-      <span data-i18n="hero.badge">FCT v2 · 技术组件套件 · 不是 L2，不是代币</span>
+      <span data-i18n="hero.badge">FCT v1.4 · 逻辑状态机（LSM）技术组件套件 · 不是链，不是代币</span>
     </div>
 
     <h1 class="reveal">
-      <span data-i18n="hero.h1a">门级函数 + 状态容器，</span>
-      <em data-i18n="hero.h1b">计算物理上无法作恶</em>
-      <span data-i18n="hero.h1c">的技术组件套件</span>
+      <span data-i18n="hero.h1a">计算无副作用 · 状态原子转移 ·</span>
+      <em data-i18n="hero.h1b">逻辑状态机（LSM）</em>
+      <span data-i18n="hero.h1c">链上技术组件套件</span>
     </h1>
 
     <p class="lead reveal" data-i18n="hero.lead">
-      FCT 不是一条链、不是一个代币、不是 L2 —— 它是一套链上计算与状态管理技术组件：
-      以 NAND + LATCH 门级函数承担计算，以容器 + CSC 承担状态，由 Ethercoin 团队构建。
-      任何想提供可靠链上计算服务的网络，都能集成 FCT 组件。
+      FCT 不是一条链、不是一个代币、不是 L2 —— 它是 Ethercoin 团队维护的链上计算与状态技术组件套件。
+      FCT 提供的核心技术正式命名为<strong>逻辑状态机（Logical State Machine, LSM）</strong>：以 NAND 纯函数原语承担计算，
+      以 LATCH 状态原语承担记忆，组合部分为布尔函数，时序部分为有限状态机 —— 可在链上被调用，用于验证、条件求值和状态约束。
     </p>
 
     <div class="hero-cta reveal">
       <a class="btn btn-primary" href="#components" data-i18n="hero.cta1">查看组件</a>
-      <a class="btn btn-ghost" href="#gatelang" data-i18n="hero.cta3">GateLang 语言前端</a>
-      <a class="btn btn-ghost" href="FCT-whitepaper-zh.md" data-wp download data-i18n="hero.cta2">阅读白皮书 v1.3</a>
+      <a class="btn btn-ghost" href="#gatelang" data-i18n="hero.cta3">GateLang v2.2 语言前端</a>
+      <a class="btn btn-ghost" href="FCT-whitepaper-zh.md" data-wp download data-i18n="hero.cta2">阅读白皮书 v1.4</a>
     </div>
 
     <ul class="hero-stats reveal">
-      <li><b>2</b><span data-i18n="hero.stat1">计算原语（门级函数 + DSU）</span></li>
+      <li><b>2</b><span data-i18n="hero.stat1">计算原语（逻辑原语函数 + DSU）</span></li>
       <li><b>5</b><span data-i18n="hero.stat2">类技术组件</span></li>
       <li><b>0</b><span data-i18n="hero.stat3">代币（统一 ETHER 结算）</span></li>
     </ul>
+  </div>
+</section>
+
+<!-- ============ POSITIONING ============ -->
+<section class="section" id="positioning">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="pos.eyebrow">定位与边界</p>
+    <h2 class="reveal" data-i18n="pos.h2">FCT 是什么，不是什么</h2>
+    <p class="section-lead reveal" data-i18n="pos.lead">
+      FCT 是 Ethercoin 团队对外输出的<strong>链上计算与状态技术组件</strong>，不是一条独立的链，也不是一个代币项目。
+      Ethercoin 通过在各公链部署 FCT 适配器，规划成为各公链的 L2/侧链，提供类似跨链桥但更可验证的清算功能。
+    </p>
+
+    <div class="table-wrap reveal">
+      <table class="data-table">
+        <caption class="sr-only" data-i18n="pos.tableCap">FCT 的定位与边界</caption>
+        <thead>
+          <tr>
+            <th data-i18n="pos.th1">维度</th>
+            <th data-i18n="pos.th2">定位</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="pos.r0k">维护方</td><td data-i18n="pos.r0v">Ethercoin 团队</td></tr>
+          <tr><td data-i18n="pos.r1k">性质</td><td data-i18n="pos.r1v">链上计算与状态技术组件套件</td></tr>
+          <tr><td data-i18n="pos.r2k">核心技术</td><td data-i18n="pos.r2v">逻辑状态机（LSM）</td></tr>
+          <tr><td data-i18n="pos.r3k">语言开发工具</td><td data-i18n="pos.r3v">GateLang v2.2</td></tr>
+          <tr><td data-i18n="pos.r4k">链状态</td><td data-i18n="pos.r4v"><strong>尚未激活</strong></td></tr>
+          <tr><td data-i18n="pos.r5k">代币</td><td data-i18n="pos.r5v"><strong>无。未发行任何 FCT 代币</strong></td></tr>
+          <tr><td data-i18n="pos.r6k">独立治理 / 质押 / 挖矿</td><td data-i18n="pos.r6v">均无；经济媒介统一为 Ethercoin 生态的 ETHER</td></tr>
+          <tr><td data-i18n="pos.r7k">服务对象</td><td data-i18n="pos.r7v">以太坊、Robinhood Chain、Solana、Cosmos、Move 系、比特币 L2 等目标公链</td></tr>
+          <tr><td data-i18n="pos.r8k">部署主体</td><td data-i18n="pos.r8v">Ethercoin 多链清算层</td></tr>
+          <tr><td data-i18n="pos.r9k">目标</td><td data-i18n="pos.r9v">让目标公链获得可验证计算、可转移状态容器与跨链清算能力</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="warn-banner reveal">
+      <strong data-i18n="pos.warnT">链未激活 · 无代币</strong>
+      <p data-i18n="pos.warnD">FCT 链尚未激活，FCT 未发行任何代币。任何声称 FCT 代币、空投、预售、私募、质押、挖矿、映射、兑换、补偿的行为，均与 Ethercoin 团队无关。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TERMINOLOGY ============ -->
+<section class="section section-alt" id="terminology">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="term.eyebrow">标准术语</p>
+    <h2 class="reveal" data-i18n="term.h2">为什么不再说「电路」「网表」「门级」</h2>
+    <p class="section-lead reveal" data-i18n="term.lead">
+      在软件 / 链上环境中，沿用硬件术语容易引入错误的硬件语义。GateLang 的编译产物不是硬件意义上的电路，
+      而是<strong>可执行逻辑-状态程序 / 逻辑状态机</strong>：组合部分为布尔函数，时序部分为有限状态机。
+    </p>
+
+    <div class="table-wrap reveal">
+      <table class="data-table">
+        <caption class="sr-only" data-i18n="term.tableCap">推荐术语与不推荐术语</caption>
+        <thead>
+          <tr>
+            <th data-i18n="term.th1">抽象层</th>
+            <th data-i18n="term.th2">推荐叫法</th>
+            <th data-i18n="term.th3">不推荐</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="term.r1a">数学层</td><td data-i18n="term.r1b">布尔函数、状态转移函数、时序逻辑函数</td><td data-i18n="term.r1c">逻辑集合</td></tr>
+          <tr><td data-i18n="term.r2a">软件实现层</td><td data-i18n="term.r2b">逻辑表达式 DAG、数据流图、有限状态机、状态转移系统</td><td data-i18n="term.r2c">电路网表</td></tr>
+          <tr><td data-i18n="term.r3a">链上执行层</td><td data-i18n="term.r3b">链上可执行逻辑模块、链上状态机、验证函数</td><td data-i18n="term.r3c">门级电路</td></tr>
+          <tr><td data-i18n="term.r4a">元件层</td><td data-i18n="term.r4b">逻辑原语集合（NAND、LATCH）</td><td data-i18n="term.r4c">逻辑集合</td></tr>
+          <tr><td data-i18n="term.r5a">统称</td><td data-i18n="term.r5b">可执行逻辑-状态程序、逻辑状态机</td><td data-i18n="term.r5c">电路</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h reveal" data-i18n="term.ccipH">CCIP 2.0 语境下的标准表述</h3>
+    <div class="table-wrap reveal">
+      <table class="data-table">
+        <caption class="sr-only" data-i18n="term.ccipCap">CCIP 2.0 相关对象的标准表述</caption>
+        <thead>
+          <tr>
+            <th data-i18n="term.ch1">CCIP 2.0 相关对象</th>
+            <th data-i18n="term.ch2">标准表述</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="term.c1k">CCV 验证逻辑</td><td data-i18n="term.c1v">验证函数 / 验证状态机</td></tr>
+          <tr><td data-i18n="term.c2k">自定义执行器的条件</td><td data-i18n="term.c2v">条件求值程序 / 约束程序</td></tr>
+          <tr><td data-i18n="term.c3k">CSC</td><td data-i18n="term.c3v">状态容器 + 状态转移规则</td></tr>
+          <tr><td data-i18n="term.c4k">ACE 合规规则</td><td data-i18n="term.c4v">合规约束程序 / 合规状态机</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="risk-note reveal">
+      <h3 data-i18n="term.ruleH">使用原则</h3>
+      <ul>
+        <li data-i18n="term.rule1">描述软件 / 链上环境时，避免使用「电路」「网表」「门级」</li>
+        <li data-i18n="term.rule2">如确需硬件类比，应明确标注为「硬件类比」</li>
+        <li data-i18n="term.rule3">优先使用：验证函数 / 验证状态机、条件求值程序 / 约束程序、状态容器 + 状态转移规则、合规约束程序 / 合规状态机、可执行逻辑-状态程序 / 逻辑状态机</li>
+      </ul>
+    </div>
   </div>
 </section>
 
@@ -112,8 +215,8 @@
     <p class="eyebrow reveal" data-i18n="prim.eyebrow">核心概念</p>
     <h2 class="reveal" data-i18n="prim.h2">双计算原语</h2>
     <p class="section-lead reveal" data-i18n="prim.lead">
-      FCT 仅依赖两种计算原语构建所有能力：<strong>门级函数</strong>承担计算，<strong>DSU</strong> 承担状态。
-      所有组件、所有证明路径、所有应用场景，都建立在这两个原语之上。
+      FCT 仅依赖两种计算原语构建所有能力：<strong>逻辑原语函数</strong>承担计算，<strong>DSU</strong> 承担领域专用执行。
+      两者在可计算功能上均图灵完备、可相互模拟，但在形式化验证粒度、证明成本与性能特征上互补。
     </p>
 
     <div class="gates">
@@ -129,8 +232,8 @@
           <text x="192" y="54" class="g-pin">Y</text>
         </svg>
         <figcaption>
-          <b data-i18n="prim.fnT">门级函数</b>
-          <span data-i18n="prim.fnD">NAND 门逻辑完备 + LATCH 存储状态，可表达任意时序逻辑。无副作用、确定性、可组合 —— 物理上无法作恶。</span>
+          <b data-i18n="prim.fnT">逻辑原语函数</b>
+          <span data-i18n="prim.fnD">NAND 纯函数原语逻辑完备，LATCH 状态原语保存一位内部状态，可表达任意时序逻辑。无副作用、确定性、可组合 —— 物理上免疫重入与状态操纵。</span>
         </figcaption>
       </figure>
 
@@ -140,48 +243,163 @@
           <path d="M20 60h30" class="g-wire"/>
           <path d="M170 60h30" class="g-wire"/>
           <text x="110" y="42" class="g-text" text-anchor="middle">DSU</text>
-          <text x="110" y="62" class="g-sub" text-anchor="middle">数据 · 证明 · 决议</text>
-          <text x="110" y="82" class="g-sub" text-anchor="middle">抽象状态接口</text>
+          <text x="110" y="62" class="g-sub" text-anchor="middle">领域专用执行单元</text>
+          <text x="110" y="82" class="g-sub" text-anchor="middle">只读 · 有步数上限</text>
           <text x="20" y="52" class="g-pin">in</text>
           <text x="180" y="52" class="g-pin">out</text>
         </svg>
         <figcaption>
-          <b data-i18n="prim.dsuT">DSU · 统一状态接口</b>
-          <span data-i18n="prim.dsuD">数据恒定、证明清单、决议记录三表合一，任何状态客户端都可验证，无需信任中间人。</span>
+          <b data-i18n="prim.dsuT">DSU · 领域专用执行单元</b>
+          <span data-i18n="prim.dsuD">哈希、签名、算术、状态机、ML 推理五类预编译单元，面向高性能批量计算。只读执行，状态修改由容器层统一完成。</span>
         </figcaption>
       </figure>
     </div>
 
+    <h3 class="sub-h reveal" data-i18n="prim.dsuH">DSU 五类</h3>
     <div class="table-wrap reveal">
       <table class="data-table">
-        <caption class="sr-only" data-i18n="prim.tableCap">双原语的关键特性</caption>
+        <caption class="sr-only" data-i18n="prim.dsuCap">DSU 类别与覆盖场景</caption>
         <thead>
           <tr>
-            <th data-i18n="prim.th1">原语</th>
-            <th data-i18n="prim.th2">特性</th>
+            <th data-i18n="prim.dh1">DSU 类别</th>
+            <th data-i18n="prim.dh2">覆盖场景</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td data-i18n="prim.p1k">门级函数</td><td data-i18n="prim.p1v">无副作用：无法调用外部合约，无法写入外部状态</td></tr>
-          <tr><td data-i18n="prim.p2k">门级函数</td><td data-i18n="prim.p2v">只读调用：不消耗 Gas，不产生交易</td></tr>
-          <tr><td data-i18n="prim.p3k">门级函数</td><td data-i18n="prim.p3v">确定性：相同输入与状态，总是相同输出</td></tr>
-          <tr><td data-i18n="prim.p4k">门级函数</td><td data-i18n="prim.p4v">可组合：一个函数可作为子模块被另一个函数引用，组合是结构性的</td></tr>
-          <tr><td data-i18n="prim.p5k">DSU</td><td data-i18n="prim.p5v">可验证性：数据、证明、决议由客户端直接验证，无需信任第三方</td></tr>
-          <tr><td data-i18n="prim.p6k">DSU</td><td data-i18n="prim.p6v">抽象性：不关心载体（链、链下存储、去中心化存储），只关心状态的可验证性</td></tr>
+          <tr><td data-i18n="prim.d1k">哈希 DSU</td><td data-i18n="prim.d1v">Poseidon / Blake3 / SHA-256 —— 低成本哈希与承诺</td></tr>
+          <tr><td data-i18n="prim.d2k">签名 DSU</td><td data-i18n="prim.d2v">EdDSA / BLS / secp256k1 —— 支持批量验证</td></tr>
+          <tr><td data-i18n="prim.d3k">算术 DSU</td><td data-i18n="prim.d3v">有限域、大整数、椭圆曲线 —— 密码学协处理器</td></tr>
+          <tr><td data-i18n="prim.d4k">状态机 DSU</td><td data-i18n="prim.d4v">条件分支、循环、跳转 —— 提供控制流</td></tr>
+          <tr><td data-i18n="prim.d5k">ML 推理 DSU</td><td data-i18n="prim.d5v">量化神经网络前向传播 —— 可验证 AI 推理核心</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <h3 class="sub-h reveal" data-i18n="prim.diffH">双原语架构属性差异</h3>
+    <div class="table-wrap reveal">
+      <table class="data-table data-table-cmp">
+        <caption class="sr-only" data-i18n="prim.diffCap">逻辑原语函数与 DSU 的架构属性差异</caption>
+        <thead>
+          <tr>
+            <th data-i18n="prim.dfh0">属性</th>
+            <th data-i18n="prim.dfh1">逻辑原语函数</th>
+            <th data-i18n="prim.dfh2">DSU</th>
+            <th data-i18n="prim.dfh3">是否自动等价</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="prim.df1a">无副作用</td><td data-i18n="prim.df1b">是</td><td data-i18n="prim.df1c">白皮书规定只读</td><td data-i18n="prim.df1d">是</td></tr>
+          <tr><td data-i18n="prim.df2a">只读调用</td><td data-i18n="prim.df2b">是</td><td data-i18n="prim.df2c">是</td><td data-i18n="prim.df2d">是</td></tr>
+          <tr><td data-i18n="prim.df3a">状态修改</td><td data-i18n="prim.df3b">不能，由容器层统一</td><td data-i18n="prim.df3c">不能，由容器层统一</td><td data-i18n="prim.df3d">是</td></tr>
+          <tr><td data-i18n="prim.df4a">重入免疫</td><td data-i18n="prim.df4b">物理上免疫</td><td data-i18n="prim.df4c">只读约束下免疫</td><td data-i18n="prim.df4d">是</td></tr>
+          <tr><td data-i18n="prim.df5a">确定性</td><td data-i18n="prim.df5b">逻辑原语结构保证</td><td data-i18n="prim.df5c">需固定实现与精度</td><td data-i18n="prim.df5d">需额外约束</td></tr>
+          <tr><td data-i18n="prim.df6a">形式化验证</td><td data-i18n="prim.df6b">天然适合全量验证</td><td data-i18n="prim.df6c">模块级验证，较难全量</td><td data-i18n="prim.df6d">否</td></tr>
+          <tr><td data-i18n="prim.df7a">验证粒度</td><td data-i18n="prim.df7b">逐原语、逐 LATCH</td><td data-i18n="prim.df7c">预编译模块级</td><td data-i18n="prim.df7d">否</td></tr>
+          <tr><td data-i18n="prim.df8a">跨链身份</td><td data-i18n="prim.df8b">NAND 逻辑结构哈希 + 函数 NFT</td><td data-i18n="prim.df8c">DSU 版本 + 参数哈希</td><td data-i18n="prim.df8d">需额外规范</td></tr>
+          <tr><td data-i18n="prim.df9a">证明成本</td><td data-i18n="prim.df9b">逐原语证明可能较大</td><td data-i18n="prim.df9c">类别成本模型，可预测</td><td data-i18n="prim.df9d">不同</td></tr>
+          <tr><td data-i18n="prim.df10a">性能</td><td data-i18n="prim.df10b">低</td><td data-i18n="prim.df10c">高</td><td data-i18n="prim.df10d">不同</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="sub-h reveal" data-i18n="prim.selH">选择矩阵</h3>
+    <ul class="check-list reveal">
+      <li class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="prim.s1t">跨链身份锚定 / 形式化验证 / 公共函数库</b><p data-i18n="prim.s1d">推荐逻辑原语函数 —— NAND 逻辑结构哈希唯一，逐原语可全量证明，结构性组合版税可追溯。</p></div></li>
+      <li class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="prim.s2t">AI 推理 / 密码学运算 / 批量计算 / 小额高频调用</b><p data-i18n="prim.s2d">推荐 DSU —— ML 推理 DSU 高性能，算术 / 签名 / 哈希 DSU 高效，类别成本模型可预测。</p></div></li>
+      <li class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="prim.s3t">RWA 合规检查 / AI Agent 容器</b><p data-i18n="prim.s3d">推荐混合 —— 逻辑原语函数验证规则与身份，DSU 处理数据与执行。</p></div></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ ARCHITECTURE ============ -->
+<section class="section section-alt" id="architecture">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="arch.eyebrow">功能架构</p>
+    <h2 class="reveal" data-i18n="arch.h2">LSM 的五层功能体系</h2>
+    <p class="section-lead reveal" data-i18n="arch.lead">
+      核心设计原则：<strong>计算分层、状态压缩、权限隔离、载体无关。</strong>
+    </p>
+
+    <div class="layers">
+      <article class="layer reveal">
+        <div class="layer-no">L1</div>
+        <div class="layer-body">
+          <h3 data-i18n="arch.l1t">计算原语层</h3>
+          <p data-i18n="arch.l1d">NAND 作为组合逻辑原语，LATCH 作为状态保持原语。两者组合产生：组合部分为布尔函数，时序部分为有限状态机。</p>
+          <ul class="tags">
+            <li data-i18n="arch.l1a">NAND 逻辑完备</li>
+            <li data-i18n="arch.l1b">图灵完备</li>
+          </ul>
+        </div>
+      </article>
+
+      <div class="layer-arrow" aria-hidden="true"><span data-i18n="arch.a1">编译</span></div>
+
+      <article class="layer reveal">
+        <div class="layer-no">L2</div>
+        <div class="layer-body">
+          <h3 data-i18n="arch.l2t">语言编译层</h3>
+          <p data-i18n="arch.l2d">GateLang v2.2 提供四层抽象 —— 逻辑原语层、高级语言层、领域 DSL 层、可视化层 —— 统一编译为 FCT 兼容产物。AI 辅助开发必须经 gatelang-ai-gate 强制验证。</p>
+          <ul class="tags">
+            <li data-i18n="arch.l2a">四层抽象</li>
+            <li data-i18n="arch.l2b">AI 是加速器</li>
+          </ul>
+        </div>
+      </article>
+
+      <div class="layer-arrow" aria-hidden="true"><span data-i18n="arch.a2">部署</span></div>
+
+      <article class="layer layer-key reveal">
+        <div class="layer-no">L3</div>
+        <div class="layer-body">
+          <h3 data-i18n="arch.l3t">链上执行层</h3>
+          <p data-i18n="arch.l3d">LSM 编译产物以函数 NFT（可执行逻辑模块）与容器 NFT（状态管理凭证）形式部署。函数 NFT 调用是只读的 —— 不消耗 Gas，不产生交易。</p>
+          <ul class="tags">
+            <li data-i18n="arch.l3a">只读调用</li>
+            <li data-i18n="arch.l3b">物理上免疫重入</li>
+          </ul>
+        </div>
+      </article>
+
+      <div class="layer-arrow" aria-hidden="true"><span data-i18n="arch.a3">证明</span></div>
+
+      <article class="layer reveal">
+        <div class="layer-no">L4</div>
+        <div class="layer-body">
+          <h3 data-i18n="arch.l4t">验证与证明层</h3>
+          <p data-i18n="arch.l4d">支持三种证明路径：授权可重放、ZK 证明、TEE 证明。证明路径可按资产价值和风险偏好配置。</p>
+          <ul class="tags">
+            <li data-i18n="arch.l4a">重放</li>
+            <li data-i18n="arch.l4b">ZK / TEE</li>
+          </ul>
+        </div>
+      </article>
+
+      <div class="layer-arrow" aria-hidden="true"><span data-i18n="arch.a4">跨链</span></div>
+
+      <article class="layer reveal">
+        <div class="layer-no">L5</div>
+        <div class="layer-body">
+          <h3 data-i18n="arch.l5t">跨链协同层</h3>
+          <p data-i18n="arch.l5d">通过适配器接入 EVM、Solana、Cosmos、Move 与比特币 L2。跨链交互不是简单消息传递，而是源链 LSM 与目标链 LSM 之间的状态协同转移。</p>
+          <ul class="tags">
+            <li data-i18n="arch.l5a">状态协同</li>
+            <li data-i18n="arch.l5b">载体无关</li>
+          </ul>
+        </div>
+      </article>
     </div>
   </div>
 </section>
 
 <!-- ============ GATELANG ============ -->
-<section class="section section-alt" id="gatelang">
+<section class="section" id="gatelang">
   <div class="wrap">
-    <p class="eyebrow reveal" data-i18n="gl.eyebrow">统一语言前端</p>
-    <h2 class="reveal" data-i18n="gl.h2">GateLang v2.1 · 统一可验证计算语言前端</h2>
+    <p class="eyebrow reveal" data-i18n="gl.eyebrow">统一语言开发工具</p>
+    <h2 class="reveal" data-i18n="gl.h2">GateLang v2.2 · 面向所有用户的可验证逻辑-状态计算语言</h2>
     <p class="section-lead reveal" data-i18n="gl.lead">
-      GateLang 以 NAND 门为唯一组合原语、LATCH 为唯一状态原语，通过<strong>四层抽象</strong>把开发者逻辑统一编译为 FCT 兼容产物。
-      其 <code>spec</code> 与 <code>gateproof</code> 生成形式化验证证明并与函数 / 容器 NFT 绑定；AI 辅助开发必须经
+      GateLang 以 <strong>NAND 为唯一组合逻辑原语、LATCH 为唯一状态原语</strong>，通过<strong>四层抽象</strong>把开发者逻辑统一编译为同一 NAND/LATCH 逻辑原语 IR，
+      不引入任何运行时开销或隐藏语义。其 <code>spec</code> 与 <code>gateproof</code> 生成形式化验证证明并与函数 / 容器 NFT 绑定；AI 辅助开发必须经
       <code>gatelang-ai-gate</code> 强制验证 —— <strong>AI 是加速器，形式化验证是保证者</strong>。
     </p>
 
@@ -191,22 +409,47 @@
         <thead>
           <tr>
             <th data-i18n="gl.th1">层</th>
-            <th data-i18n="gl.th2">面向用户与编译目标</th>
+            <th data-i18n="gl.th2">面向用户</th>
+            <th data-i18n="gl.th3">编译目标</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td data-i18n="gl.r1n">L1 门级层</td><td data-i18n="gl.r1v">硬件工程师 / 形式化研究者 → NAND/LATCH 网表（FCT 门级链上函数）</td></tr>
-          <tr><td data-i18n="gl.r2n">L2 高级语言层</td><td data-i18n="gl.r2v">软件开发者 → 门级网表或 DSU 调用（FCT 门级函数 + 容器 ABI）</td></tr>
-          <tr><td data-i18n="gl.r3n">L3 领域 DSL</td><td data-i18n="gl.r3v">金融 / AI / 游戏专家 → DSU 描述文件 + 专用电路（FCT DSU）</td></tr>
-          <tr><td data-i18n="gl.r4n">L4 可视化层</td><td data-i18n="gl.r4v">教育用户 / 产品经理 → 自动生成 L1/L2 代码（FCT 函数 NFT / 容器 NFT）</td></tr>
+          <tr><td data-i18n="gl.r1n">L1 逻辑原语层</td><td data-i18n="gl.r1u">硬件工程师 / ZK 电路开发者 / 形式化研究者</td><td data-i18n="gl.r1v">NAND / LATCH 逻辑原语 IR</td></tr>
+          <tr><td data-i18n="gl.r2n">L2 高级语言层</td><td data-i18n="gl.r2u">软件开发者</td><td data-i18n="gl.r2v">逻辑原语模块或 DSU 调用</td></tr>
+          <tr><td data-i18n="gl.r3n">L3 领域 DSL 层</td><td data-i18n="gl.r3u">金融 / AI / 游戏领域专家</td><td data-i18n="gl.r3v">展开为 L2，再展开为逻辑原语</td></tr>
+          <tr><td data-i18n="gl.r4n">L4 可视化层</td><td data-i18n="gl.r4u">教育用户 / 产品经理 / 非技术创作者</td><td data-i18n="gl.r4v">拖拽连线 → 自动生成 L1/L2 代码</td></tr>
         </tbody>
       </table>
     </div>
 
+    <div class="grid grid-2">
+      <div class="reveal">
+        <h3 class="sub-h" data-i18n="gl.baH">多后端可移植</h3>
+        <ul class="tags">
+          <li data-i18n="gl.ba1">NAND/LATCH 逻辑原语 IR</li>
+          <li data-i18n="gl.ba2">FPGA / ASIC 网表</li>
+          <li data-i18n="gl.ba3">ZK 电路（Circom / Noir）</li>
+          <li data-i18n="gl.ba4">TEE 可执行代码</li>
+          <li data-i18n="gl.ba5">软件模拟器</li>
+          <li data-i18n="gl.ba6">C 代码（嵌入式固件）</li>
+        </ul>
+        <p class="paths-note" data-i18n="gl.baNote">同一份源码可编译为多种目标，后端可插拔，语言不绑定任何执行环境。</p>
+      </div>
+      <div class="reveal">
+        <h3 class="sub-h" data-i18n="gl.resH">资源在编译期确定</h3>
+        <ul class="check-list">
+          <li class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="gl.res1t">NAND 原语数量</b><p data-i18n="gl.res1d">决定硬件面积与 ZK 证明生成时间</p></div></li>
+          <li class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="gl.res2t">逻辑深度</b><p data-i18n="gl.res2d">最长组合逻辑路径，决定时钟频率</p></div></li>
+          <li class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="gl.res3t">时钟周期数</b><p data-i18n="gl.res3d">决定 TEE 执行延迟</p></div></li>
+          <li class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="gl.res4t">LATCH 数</b><p data-i18n="gl.res4d">状态寄存器位数</p></div></li>
+        </ul>
+      </div>
+    </div>
+
     <div class="hero-cta reveal">
-      <a class="btn btn-primary" href="GateLang-whitepaper-zh.md" data-gl download data-i18n="gl.dl">下载 GateLang 白皮书 v2.1</a>
+      <a class="btn btn-primary" href="GateLang-whitepaper-zh.md" data-gl download data-i18n="gl.dl">下载 GateLang 白皮书 v2.2</a>
       <a class="btn btn-ghost" href="https://github.com/functioncomplete/gatelang" target="_blank" rel="noopener" data-i18n="gl.repo">GateLang 仓库（GitHub）</a>
-      <a class="btn btn-ghost" href="#provable" data-i18n="gl.toProvable">查看证明路径</a>
+      <a class="btn btn-ghost" href="#components" data-i18n="gl.toComponents">查看 FCT 组件</a>
     </div>
   </div>
 </section>
@@ -226,42 +469,42 @@
           <svg viewBox="0 0 32 32"><path d="M6 16h7l4-7 4 14 4-7h3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
         </div>
         <h3 data-i18n="comp.c1t">执行 · Executable</h3>
-        <p data-i18n="comp.c1d">门级函数（NAND + LATCH）与 DSU 共同承担计算：函数定义逻辑，DSU 定义状态接口。</p>
+        <p data-i18n="comp.c1d">逻辑原语函数（NAND + LATCH）与 DSU 共同承担计算：函数定义逻辑，DSU 定义领域专用执行，两者共享容器状态层。</p>
       </article>
       <article class="card reveal">
         <div class="card-ico" aria-hidden="true">
           <svg viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M6 12h20M6 20h20M12 6v20" stroke="currentColor" stroke-width="1.2" opacity=".6"/></svg>
         </div>
         <h3 data-i18n="comp.c2t">状态 · State</h3>
-        <p data-i18n="comp.c2d">容器（Container）封装节点状态，CSC 压缩状态承诺，历史默克尔树 + 扩展默克尔树 + 状态租金。</p>
+        <p data-i18n="comp.c2d">容器（Container）封装节点状态，CSC 压缩状态承诺，历史默克尔树 + 扩展默克尔树 + 状态租金，冷热状态分离。</p>
       </article>
       <article class="card reveal">
         <div class="card-ico" aria-hidden="true">
           <svg viewBox="0 0 32 32"><path d="M16 4l11 6v12l-11 6-11-6V10z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 11v7M16 21v1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </div>
         <h3 data-i18n="comp.c3t">证明 · Provable</h3>
-        <p data-i18n="comp.c3d">授权可重放、ZK 证明、TEE 证明三种路径并存，用户按安全需求自由选择。</p>
+        <p data-i18n="comp.c3d">重放证明、ZK 证明、TEE 证明三种路径并存，证明者与验证者解耦，用户按安全需求自由选择。</p>
       </article>
       <article class="card reveal">
         <div class="card-ico" aria-hidden="true">
           <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 5v22M5 16h22" stroke="currentColor" stroke-width="1.2" opacity=".6"/><path d="M26 16c0 5-4.5 9-10 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/></svg>
         </div>
         <h3 data-i18n="comp.c4t">清算 · Liquidatable</h3>
-        <p data-i18n="comp.c4d">适配器负责跨链清算：状态根锚定 + 资产托管 + 最终仲裁，链的状态变化可被清算。</p>
+        <p data-i18n="comp.c4d">适配器负责跨链清算：状态根双向锚定 + 资产托管 + 挑战期与保险基金，链的状态变化可被清算。</p>
       </article>
       <article class="card reveal">
         <div class="card-ico" aria-hidden="true">
           <svg viewBox="0 0 32 32"><path d="M8 26V10l8-4 8 4v16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 17h8M12 21h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         </div>
         <h3 data-i18n="comp.c5t">身份 · Identifiable</h3>
-        <p data-i18n="comp.c5d">函数 NFT 与容器 NFT：门票、版税登记、管理员身份三位一体，来源可追溯。</p>
+        <p data-i18n="comp.c5d">函数 NFT 与容器 NFT：门票、版税登记、管理员身份三位一体，来源可追溯，跨链登记。</p>
       </article>
       <article class="card reveal">
         <div class="card-ico" aria-hidden="true">
           <svg viewBox="0 0 32 32"><rect x="4" y="4" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="18" y="4" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="4" y="18" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="18" y="18" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg>
         </div>
         <h3 data-i18n="comp.c6t">载体无关</h3>
-        <p data-i18n="comp.c6d">组件不依赖特定链，通过适配器接入 EVM、Solana、Cosmos、Move 与比特币 L2，逐链推进。</p>
+        <p data-i18n="comp.c6d">组件不依赖特定链，通过适配器接入 EVM、Solana、Cosmos、Move 与比特币 L2，逐链推进、独立可验证。</p>
       </article>
     </div>
   </div>
@@ -271,18 +514,18 @@
 <section class="section" id="container">
   <div class="wrap">
     <p class="eyebrow reveal" data-i18n="ctr.eyebrow">状态组件</p>
-    <h2 class="reveal" data-i18n="ctr.h2">容器 Container —— 节点状态的"盒子"</h2>
+    <h2 class="reveal" data-i18n="ctr.h2">容器 Container —— 节点状态的「盒子」</h2>
     <p class="section-lead reveal" data-i18n="ctr.lead">
       容器装载节点的状态与资产，是网络中<strong>可转让、可授权</strong>的核心载体：
-      转移令牌即转移管理权，持有者获得节点的一切访问权。
+      转移令牌即转移管理权，持有者获得节点的一切访问权。容器属于那枚容器 NFT，其主人可以是人，也可以是 AI Agent。
     </p>
 
     <div class="grid grid-2">
       <div class="check-list reveal">
         <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s1t">可转让</b><p data-i18n="ctr.s1d">一次性可转让令牌与不可转让令牌：转让令牌即转让容器所有权。</p></div></div>
-        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s2t">资产装载</b><p data-i18n="ctr.s2d">天然装载 ETH、ERC-20、ERC-721 资产，作为节点的经济实体。</p></div></div>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s2t">资产装载</b><p data-i18n="ctr.s2d">天然装载 ETHER、稳定币、ERC-20、ERC-721 资产，作为节点的经济实体。</p></div></div>
         <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s3t">accessToken 授权</b><p data-i18n="ctr.s3d">DSU 访问由 accessToken 控制，授权粒度灵活可撤销。</p></div></div>
-        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s4t">私有状态承诺</b><p data-i18n="ctr.s4d">内部状态以承诺公开，细节对外保密，验证与隐私兼得。</p></div></div>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s4t">私有状态承诺</b><p data-i18n="ctr.s4d">内部状态以压缩状态承诺叶子形式公开，细节对外保密，验证与隐私兼得。</p></div></div>
         <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="ctr.s5t">管理员联动</b><p data-i18n="ctr.s5d">容器的管理员跟随容器 NFT 的所有权 —— 谁持有 NFT，谁管理容器。</p></div></div>
       </div>
 
@@ -290,7 +533,7 @@
         <h3 data-i18n="ctr.usesH">典型场景</h3>
         <div class="path">
           <span class="dot dot-tee" aria-hidden="true"></span>
-          <div><b data-i18n="ctr.u1t">AI 服务节点</b><span data-i18n="ctr.u1d">付费推理：调用方支付 ETHER，节点执行门级函数并返回结果，收入沉淀在容器中。</span></div>
+          <div><b data-i18n="ctr.u1t">AI 服务节点</b><span data-i18n="ctr.u1d">付费推理：调用方支付 ETHER，节点执行逻辑原语函数或 DSU 并返回结果，收入沉淀在容器中。</span></div>
         </div>
         <div class="path">
           <span class="dot dot-zk" aria-hidden="true"></span>
@@ -298,12 +541,12 @@
         </div>
         <div class="path">
           <span class="dot dot-op" aria-hidden="true"></span>
-          <div><b data-i18n="ctr.u3t">状态租用</b><span data-i18n="ctr.u3d">CSC 状态租金按字节计价，长期闲置被回收，状态市场提供租金补助。</span></div>
+          <div><b data-i18n="ctr.u3t">状态租用</b><span data-i18n="ctr.u3d">CSC 状态租金按 epoch 计价，长期闲置被驱逐到冷存储，容器进入休眠但可被唤醒。</span></div>
         </div>
 
         <div class="deploy-status reveal">
           <h4 data-i18n="ctr.statusH">开发状态 · v2 双原语组件套件</h4>
-            <p><span class="status-pill status-live" data-i18n="ctr.status1">M1 容器 · M2 CSC · M3 证明市场 · M4 共享层 · M5 门级引擎 + DSU 执行引擎 · M6 混合模式 · M7 跨链适配器已部署 Sepolia</span></p>
+            <p><span class="status-pill status-live" data-i18n="ctr.status1">M1 容器 · M2 CSC · M3 证明市场 · M4 共享层 · M5 逻辑原语引擎 + DSU 执行引擎 · M6 混合模式 · M7 跨链适配器已部署 Sepolia</span></p>
             <ul class="deploy-list">
               <li><code>ContainerNFT</code> <span class="addr">0x163C5A5Af93211FcdA4882A07cf0eeFb2eA53780</span></li>
               <li><code>Container</code> <span class="addr">0xa71F56C1738Ff130378e26b8971131C3BA6E8485</span></li>
@@ -315,7 +558,7 @@
               <li><code>HybridGate</code> <span class="addr">0xf9ede5c6b5cc94787cb43ad9997f20b176b61f56</span></li>
               <li><code>StateRootAnchor</code> <span class="addr">0x131f306acaDe6D2d8C82d902014959772d6DF9dF</span></li>
               <li data-i18n="ctr.status2">演示容器 tokenId #1 + CSC demo 状态已上链；ProofMarket 验证者投票 → 奖励 / 罚没全闭环验证通过</li>
-              <li data-i18n="ctr.status4">M5 门级引擎链上求值与 GateLang 网表逐项一致（ADD4：60 NAND / 深度 19）；混合链「合约内执行 DSU + 门级重放」5+4 → 验证通过并落状态槽</li>
+              <li data-i18n="ctr.status4">M5 逻辑原语引擎链上求值与 GateLang 逻辑原语结构逐项一致（ADD4：60 NAND / 深度 19）；混合链「合约内执行 DSU + 逻辑原语重放」5+4 → 验证通过并落状态槽</li>
               <li data-i18n="ctr.status5">M6 混合模式（乐观证明链）正例 VERIFIED / 反例 REJECTED 均链上复现；M7 跨链适配器完成质押加权 &gt;2/3 状态根锚定 + 成员证明 + 清算回调</li>
             </ul>
             <p class="paths-note" data-i18n="ctr.status3">后续：以太坊适配器独立审计后部署主网清算/验证器 → Solana 适配器（见路线图）。</p>
@@ -332,11 +575,12 @@
     <h2 class="reveal" data-i18n="prv.h2">证明市场 —— 计算可靠性的四条路径</h2>
     <p class="section-lead reveal" data-i18n="prv.lead">
       以往只有「信任网络」或「信任应用」两种选择。FCT 提供<strong>第四种</strong>：客户端可以直接验证计算，无需信任任何人；
-      需要更强保证时，可组合 ZK 或 TEE 证明。
+      需要更强保证时，可组合 ZK 或 TEE 证明。繁重计算在证明者侧完成，链上仅需低成本验证 —— 计算与验证解耦。
     </p>
 
     <div class="table-wrap reveal">
       <table class="data-table">
+        <caption class="sr-only" data-i18n="prv.tableCap">四条鉴权与证明路径</caption>
         <thead>
           <tr>
             <th data-i18n="prv.th1">鉴权路径</th>
@@ -354,18 +598,79 @@
     </div>
 
     <div class="risk-note reveal">
-      <h3 data-i18n="prv.noteH">DSU 可验证性</h3>
+      <h3 data-i18n="prv.noteH">证明市场与最终性</h3>
       <ul>
-        <li data-i18n="prv.note1">数据、证明、决议三表合一，任何客户端均可直接验证状态更新</li>
-        <li data-i18n="prv.note2">被引用的函数网络自行承担证明费用 —— 主叫方只付一次原函数调用费</li>
-        <li data-i18n="prv.note3">证明市场包含：重放市场、ZK 证明市场、TEE 证明市场，可证明逻辑互联</li>
+        <li data-i18n="prv.note1">证明者通过提供证明获得 ETHER 奖励；验证者通过验证证明获得手续费分成</li>
+        <li data-i18n="prv.note2">提交无效证明的证明者将被罚没保证金并永久失去资格</li>
+        <li data-i18n="prv.note3">状态转换证明被超过 2/3 验证者确认即达到最终性，预计达到秒级</li>
+        <li data-i18n="prv.note4">GateLang 的 spec 与 gateproof 生成形式化验证证明，与函数 / 容器 NFT 绑定，调用者可在调用前验证</li>
       </ul>
     </div>
   </div>
 </section>
 
+<!-- ============ SECURITY ============ -->
+<section class="section" id="security">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="sec.eyebrow">安全模型</p>
+    <h2 class="reveal" data-i18n="sec.h2">针对历史安全事件的架构级防御</h2>
+    <p class="section-lead reveal" data-i18n="sec.lead">
+      LSM 的无副作用与原子状态转移，从架构层面消除了重入、状态操纵等攻击面。
+      下表是 FCT 对近年重大跨链与 DeFi 安全事件的针对性机制。
+    </p>
+
+    <div class="table-wrap reveal">
+      <table class="data-table">
+        <caption class="sr-only" data-i18n="sec.tableCap">历史安全事件与 LSM 针对性机制</caption>
+        <thead>
+          <tr>
+            <th data-i18n="sec.th1">攻击类型</th>
+            <th data-i18n="sec.th2">代表事件</th>
+            <th data-i18n="sec.th3">攻击利用的「灵活性」</th>
+            <th data-i18n="sec.th4">LSM 的针对性机制</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td data-i18n="sec.r1a">验证者私钥泄露</td><td data-i18n="sec.r1b">Ronin, Wormhole</td><td data-i18n="sec.r1c">身份信任可被多数签名覆盖</td><td data-i18n="sec.r1d">逻辑验证取代身份信任，签名无法绕过状态转移规则</td></tr>
+          <tr><td data-i18n="sec.r2a">签名 / 编码缺陷</td><td data-i18n="sec.r2b">Wormhole</td><td data-i18n="sec.r2c">运行时对模糊输入的「宽容」处理</td><td data-i18n="sec.r2d">确定性布尔函数，输入输出穷举可验证</td></tr>
+          <tr><td data-i18n="sec.r3a">重入攻击</td><td data-i18n="sec.r3b">The DAO</td><td data-i18n="sec.r3c">外部调用导致状态不一致窗口</td><td data-i18n="sec.r3d">无副作用、只读调用，状态转移原子化</td></tr>
+          <tr><td data-i18n="sec.r4a">预言机操纵</td><td data-i18n="sec.r4b">Bonzo Lend</td><td data-i18n="sec.r4c">单一数据源可被伪造</td><td data-i18n="sec.r4d">数据来源结构性约束 + 客户端可独立复现</td></tr>
+          <tr><td data-i18n="sec.r5a">治理 / 配置失误</td><td data-i18n="sec.r5b">Kelp DAO</td><td data-i18n="sec.r5c">人为配置可被误导或疏忽</td><td data-i18n="sec.r5d">操作规范硬编码为状态机前置条件</td></tr>
+          <tr><td data-i18n="sec.r6a">跨链最终性违反</td><td data-i18n="sec.r6b">Nomad, Ronin</td><td data-i18n="sec.r6c">时间窗口估计的粗略性</td><td data-i18n="sec.r6d">时间等待转化为状态条件，最终性编码到逻辑中</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="check-list reveal">
+        <h3 class="sub-h" data-i18n="sec.chH">执行安全</h3>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="sec.s1t">逻辑原语函数无副作用</b><p data-i18n="sec.s1d">无法调用外部合约、无法写入外部状态，物理上免疫重入与状态操纵。</p></div></div>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="sec.s2t">DSU 只读</b><p data-i18n="sec.s2d">状态由容器层统一修改，状态管理器守门：函数只提供「建议新状态」。</p></div></div>
+        <div class="check"><span class="ck" aria-hidden="true">✓</span><div><b data-i18n="sec.s3t">无效证明罚没</b><p data-i18n="sec.s3d">TEE、ZK、Optimistic 三路径可选，无效证明罚没 ETHER 保证金。</p></div></div>
+      </div>
+
+      <div class="paths reveal">
+        <h3 data-i18n="sec.pathsH">清算安全</h3>
+        <div class="path">
+          <span class="dot dot-tee" aria-hidden="true"></span>
+          <div><b data-i18n="sec.p1t">轻客户端验证</b><span data-i18n="sec.p1d">目标链轻客户端验证 Ethercoin 状态根，异常触发挑战与罚没。</span></div>
+        </div>
+        <div class="path">
+          <span class="dot dot-zk" aria-hidden="true"></span>
+          <div><b data-i18n="sec.p2t">限额与挑战期</b><span data-i18n="sec.p2d">单笔与周期限额控制风险敞口，大额提款延迟与分批释放。</span></div>
+        </div>
+        <div class="path">
+          <span class="dot dot-op" aria-hidden="true"></span>
+          <div><b data-i18n="sec.p3t">去中心化证明者 + 保险基金</b><span data-i18n="sec.p3d">无单一多签，防止单点作恶；协议金库部分资金用于极端情况赔付。</span></div>
+        </div>
+        <p class="paths-note" data-i18n="sec.pathsNote">AI 生成的代码必须通过 gatelang-ai-gate 强制验证，AI 模块失败必须是安全的（fail-safe）。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ ECONOMY ============ -->
-<section class="section" id="economy">
+<section class="section section-alt" id="economy">
   <div class="wrap">
     <p class="eyebrow reveal" data-i18n="eco.eyebrow">经济模型</p>
     <h2 class="reveal" data-i18n="eco.h2">无代币 · 一切以 ETHER 结算</h2>
@@ -381,7 +686,7 @@
       </article>
       <article class="card reveal">
         <h3 data-i18n="eco.c2t">组合版税</h3>
-        <p data-i18n="eco.c2d">门级函数被引用或组合时，创作者获得 ETHER 版税，从调用方支付的费用中分成。</p>
+        <p data-i18n="eco.c2d">逻辑原语函数被引用或组合时，创作者获得 ETHER 版税，从调用方支付的费用中分成。</p>
       </article>
       <article class="card reveal">
         <h3 data-i18n="eco.c3t">费用自理</h3>
@@ -391,7 +696,67 @@
 
     <div class="warn-banner reveal">
       <strong data-i18n="eco.warnT">反诈骗声明</strong>
-      <p data-i18n="eco.warnD">FCT 无任何代币、预售或空投。任何声称是「FCT 代币」并出售、要求认购或空投的行为均为诈骗，请勿参与。</p>
+      <p data-i18n="eco.warnD">FCT 无任何代币、预售或空投。任何声称是「FCT 代币」并出售、要求认购或空投的行为均为诈骗，请勿参与。市场上存在多个使用「FCT」代码的无关项目，请仅以 Ethercoin 官方渠道为准。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APPLICATIONS ============ -->
+<section class="section" id="applications">
+  <div class="wrap">
+    <p class="eyebrow reveal" data-i18n="app.eyebrow">应用前景</p>
+    <h2 class="reveal" data-i18n="app.h2">LSM 可能催生的十类项目形态</h2>
+    <p class="section-lead reveal" data-i18n="app.lead">
+      如果预言机解决了「链上如何获取可信外部数据」，并催生了 Chainlink；那么逻辑状态机（LSM）解决的是
+      「链上如何以可验证、确定性、无副作用的方式执行逻辑和管理状态」。它可能催生的不是另一个数据网络，而是一个<strong>可验证逻辑与状态层</strong>。
+    </p>
+
+    <div class="grid grid-3">
+      <article class="card reveal">
+        <h3 data-i18n="app.a1t">逻辑状态机网络</h3>
+        <p data-i18n="app.a1d"><b>类比 Chainlink。</b>节点运行 GateLang 编译的逻辑状态机，为 dApp 提供只读验证、条件求值、合规检查和状态承诺验证服务。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a2t">跨链验证者市场</h3>
+        <p data-i18n="app.a2d"><b>LSM-CCV 市场。</b>第三方发布经形式化验证的跨链验证状态机，发行方按资产价值选择不同安全层级的验证程序。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a3t">合规状态机网络</h3>
+        <p data-i18n="app.a3d"><b>面向机构级跨链与 DeFi。</b>KYC/AML、制裁筛查、交易限额、白名单规则编译为逻辑状态机，与 CCIP 2.0 的 ACE 集成。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a4t">函数 NFT / 容器 NFT 市场</h3>
+        <p data-i18n="app.a4d"><b>链上逻辑的 App Store。</b>开发者将验证函数、金融策略、游戏规则、保险理赔条件编译为 LSM，以函数 NFT 形式发布。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a5t">跨链状态协同协议</h3>
+        <p data-i18n="app.a5d"><b>不是资产桥，而是状态桥。</b>源链 LSM 输出状态根，目标链 LSM 验证并执行对应状态转移。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a6t">意图求解器网络</h3>
+        <p data-i18n="app.a6d"><b>用户表达意图，LSM 定义条件，求解器竞争执行。</b>可用于跨链交换、限价单、自动再平衡、保险自动理赔。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a7t">可验证 AI 代理网络</h3>
+        <p data-i18n="app.a7d"><b>AI 是加速器，形式化验证是保证者。</b>LSM 作为 AI 代理行为的约束层：AI 提出的操作必须满足预设状态机规则。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a8t">状态租金与状态压缩协议</h3>
+        <p data-i18n="app.a8d"><b>CSC + 历史默克尔树 + 扩展默克尔树。</b>只验证状态根，不展开完整状态，降低全节点存储负担与状态膨胀。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a9t">治理与权限状态机</h3>
+        <p data-i18n="app.a9d"><b>针对 DAO 治理攻击与配置失误。</b>治理规则、多签门槛、时间锁、权限转移编译为 LSM，高权限操作必须满足预设状态转移序列。</p>
+      </article>
+      <article class="card reveal">
+        <h3 data-i18n="app.a10t">形式化验证即服务（FVaS）</h3>
+        <p data-i18n="app.a10d"><b>将业务规则自动编译为 LSM 并生成证明。</b>从 Solidity、DSL 或自然语言自动生成逻辑状态机并输出验证报告。</p>
+      </article>
+    </div>
+
+    <div class="risk-note reveal">
+      <h3 data-i18n="app.concH">「数据 + 逻辑 + 状态」的模块化区块链栈</h3>
+      <p data-i18n="app.concD">最可能诞生的是「逻辑状态机网络」—— 一个与 Chainlink 并列的基础设施层。Chainlink 提供「数据可用性」，LSM 提供「逻辑与状态的可验证性」。两者结合 CCIP 2.0，可形成「数据 + 逻辑 + 状态」的模块化区块链栈。</p>
     </div>
   </div>
 </section>
@@ -406,13 +771,13 @@
       <li class="reveal">
         <span class="tl-dot" aria-hidden="true"></span>
         <div class="tl-body">
-          <header><b data-i18n="road.s1">2026</b><span data-i18n="road.p1t">规范 + 双原语组件开发</span></header>
+          <header><b data-i18n="road.s1">2026</b><span data-i18n="road.p1t">FCT 规范与双原语组件开发</span></header>
           <ul>
-            <li data-i18n="road.p1a">发布 FCT v2 双原语规范与技术组件白皮书</li>
-            <li data-i18n="road.p1b">开发五类组件：容器、CSC、证明市场、DSU、门级引擎</li>
+            <li data-i18n="road.p1a">FCT 技术组件 v1.4 进入规范与开发阶段，发布双原语规范与技术组件白皮书</li>
+            <li data-i18n="road.p1b">GateLang v2.2 作为统一语言开发工具集成；逻辑原语函数、DSU、容器、CSC、证明市场组件化</li>
             <li data-i18n="road.p1c">在 Sepolia 测试网完成组件级验证与集成测试</li>
           </ul>
-            <p class="tl-value" data-i18n="road.p1v">当前进度：M1 容器 · M2 CSC · M3 证明市场 · M4 共享层 · M5 门级引擎 + DSU 执行引擎 · M6 混合模式 · M7 跨链适配器已在 Sepolia 上线并完成链上验证</p>
+            <p class="tl-value" data-i18n="road.p1v">当前进度：M1 容器 · M2 CSC · M3 证明市场 · M4 共享层 · M5 逻辑原语引擎 + DSU 执行引擎 · M6 混合模式 · M7 跨链适配器已在 Sepolia 上线并完成链上验证</p>
         </div>
       </li>
       <li class="reveal">
@@ -420,9 +785,9 @@
         <div class="tl-body">
           <header><b data-i18n="road.s2">2027</b><span data-i18n="road.p2t">以太坊适配器 + Robinhood Chain</span></header>
           <ul>
-            <li data-i18n="road.p2a">以太坊适配器独立审计后部署主网清算/验证器</li>
-            <li data-i18n="road.p2b">Robinhood Chain（Arbitrum Orbit + Nitro）近乎零成本迁移</li>
-            <li data-i18n="road.p2c">约 100ms 出块，优先费完全转化为创作者版税</li>
+            <li data-i18n="road.p2a">以太坊适配器独立审计后部署主网清算 / 验证器；身份锚定、函数 NFT、状态根验证</li>
+            <li data-i18n="road.p2b">Robinhood Chain（Arbitrum Orbit + Nitro）近乎零成本迁移，约 100ms 出块</li>
+            <li data-i18n="road.p2c">优先费完全转化为创作者版税；面向 RWA 的股息计算与合规检查函数</li>
           </ul>
         </div>
       </li>
@@ -431,22 +796,23 @@
         <div class="tl-body">
           <header><b data-i18n="road.s3">2028</b><span data-i18n="road.p3t">Solana 适配器</span></header>
           <ul>
-            <li data-i18n="road.p3a">门级函数编译为只读纯计算程序，Groth16 证明链上验证</li>
-            <li data-i18n="road.p3b">并行执行、亚秒级确认，验证成本恒定可预测</li>
+            <li data-i18n="road.p3a">逻辑原语函数编译为 BPF 只读纯计算程序，Groth16 证明经 alt_bn128 syscalls 链上验证</li>
+            <li data-i18n="road.p3b">通过 Rome Protocol 与 EVM 生态共享状态；利用 Sealevel 并行执行</li>
           </ul>
         </div>
       </li>
       <li class="reveal">
         <span class="tl-dot" aria-hidden="true"></span>
         <div class="tl-body">
-          <header><b data-i18n="road.s4">2029</b><span data-i18n="road.p4t">多链清算自治</span></header>
+          <header><b data-i18n="road.s4">2029+</b><span data-i18n="road.p4t">多链清算自治</span></header>
           <ul>
             <li data-i18n="road.p4a">EVM、Solana、Cosmos、Move、比特币 L2 全适配</li>
-            <li data-i18n="road.p4b">跨链清算与版税结算自治运转</li>
+            <li data-i18n="road.p4b">跨链函数调用、跨链版税、DAO 治理与清算自治运转</li>
           </ul>
         </div>
       </li>
     </ol>
+    <p class="paths-note reveal" data-i18n="road.note">以上为架构规划。FCT 链尚未激活，FCT 未发行任何代币。每一步都独立可验证，某一步遇到技术障碍时前一步成果不会作废。</p>
   </div>
 </section>
 
@@ -455,11 +821,11 @@
   <div class="wrap">
     <h2 class="reveal" data-i18n="cta.h2">让链上计算成为架构的属性</h2>
     <p class="reveal" data-i18n="cta.lead">
-      以门级函数承担计算，以容器承担状态，以 ETHER 结算价值 ——
+      以逻辑原语承担计算，以容器承担状态，以 ETHER 结算价值 ——
       FCT 是一套供任何网络集成的技术组件，安全由架构保证，而非应用层代码的质量。
     </p>
     <div class="hero-cta reveal">
-      <a class="btn btn-primary" href="FCT-whitepaper-zh.md" data-wp download data-i18n="cta.b1">下载白皮书 v1.3</a>
+      <a class="btn btn-primary" href="FCT-whitepaper-zh.md" data-wp download data-i18n="cta.b1">下载白皮书 v1.4</a>
       <a class="btn btn-ghost" href="#primitives" data-i18n="cta.b2">重看双原语</a>
     </div>
   </div>
@@ -478,15 +844,20 @@
       </svg>
       <span>Function<b>Complete</b></span>
     </div>
-    <p class="footer-note" data-i18n="footer.note">技术组件白皮书 v1.3 · 双原语组件套件 · 无代币</p>
+    <p class="footer-note" data-i18n="footer.note">技术组件白皮书 v1.4 · 逻辑状态机（LSM）套件 · 无代币</p>
     <nav class="footer-links" aria-label="页脚导航">
+      <a href="#positioning" data-i18n="nav.positioning">定位</a>
+      <a href="#terminology" data-i18n="nav.terminology">术语</a>
       <a href="#primitives" data-i18n="nav.primitives">双原语</a>
-      <a href="#gatelang" data-i18n="nav.gatelangSec">GateLang</a>
+      <a href="#architecture" data-i18n="nav.architecture">架构</a>
       <a href="#components" data-i18n="nav.components">组件</a>
       <a href="#container" data-i18n="nav.container">容器</a>
       <a href="#provable" data-i18n="nav.provable">证明</a>
+      <a href="#security" data-i18n="nav.security">安全</a>
       <a href="#economy" data-i18n="nav.economy">经济</a>
-      <a href="GateLang-whitepaper-zh.md" data-gl download data-i18n="nav.gatelang">GateLang 白皮书</a>
+      <a href="#applications" data-i18n="nav.applications">应用</a>
+      <a href="#roadmap" data-i18n="nav.roadmap">路线图</a>
+      <a href="GateLang-whitepaper-zh.md" data-gl download data-i18n="nav.gatelang">GateLang 白皮书 v2.2</a>
       <a href="https://github.com/functioncomplete/gatelang" target="_blank" rel="noopener" data-i18n="nav.gatelangRepo">GateLang 仓库</a>
       <a href="FCT-whitepaper-zh.md" data-wp download data-i18n="nav.whitepaper">白皮书</a>
     </nav>
