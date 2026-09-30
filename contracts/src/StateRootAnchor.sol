@@ -19,7 +19,7 @@ interface ILiquidationAdapter {
 }
 
 /// @title StateRootAnchor
-/// @notice FCT v2 M7 跨链适配器（whitepaper v1.3 §6.3 清算层 / dev-plan §5.5）—— 双向状态根锚定
+/// @notice FCT v2 M7 跨链适配器（whitepaper v1.4 §6.3 清算层 / dev-plan §5.5）—— 双向状态根锚定
 ///         + 轻客户端原型（>2/3 质押签名共识验证 + 二进制 Merkle 包含证明）。
 ///
 ///         **入向（远端 → 本地）**：
@@ -33,7 +33,7 @@ interface ILiquidationAdapter {
 ///         否则任意合法证明配任意 payload 即可触发清算（跨链适配器最危险的错配）。
 ///         `verifyInclusion`/`liquidate` 对**畸形证明**（长度≠depth、index 越界）会 revert 而非返回 false。
 ///
-///         信任模型：验证者集合由 owner 维护（质押权重）；>2/3 即"最终性"（§6.2 共识验证电路同构）。
+///         信任模型：验证者集合由 owner 维护（质押权重）；>2/3 即"最终性"（§6.2 共识验证函数同构）。
 ///         **运维约定**：`setValidator` 会推进 `validatorEpoch`，使旧代次下收集的签名全部失效 ——
 ///         集合变更后须重新收集签名；另 `MAX_SIGS=256` 限制单次提交的签名数，
 ///         若需 >2/3 的签名者数超过 256（如等权集合 >384 个），需改用聚合签名/位图分页。

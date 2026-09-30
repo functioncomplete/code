@@ -6,7 +6,7 @@ import {ProofMarket} from "../src/ProofMarket.sol";
 
 /// @notice v2 M3 ProofMarket 链上验证脚本（真实交易；断言失败 => 整笔交易回滚）。
 /// @dev 需两个账户：部署账户扮 requester/prover，另需 VERIFIER_PRIVATE_KEY 扮验证者
-///      （合约 v1.3 起禁止 prover/requester 自投，故验证者必须独立）。
+///      （合约 v1.4 起禁止 prover/requester 自投，故验证者必须独立）。
 ///   参数回读 → 注册验证者 → 创建任务 → 质押 → 提交 → 投票 → 结算
 ///   正例：accept 达成 >2/3 → FINALIZED，证明者拿 reward-fee
 ///   反例：reject 达成 >2/3 → SLASHED，本任务保证金罚没 + 禁赛，之后提交被拒
@@ -29,7 +29,7 @@ contract VerifyProofMarket is Script {
         address pmAddr = vm.envAddress("PM_ADDRESS");
         ProofMarket pm = ProofMarket(pmAddr);
 
-        // ---- 1. 常量和参数回读（白皮书 v1.3 §6.3）----
+        // ---- 1. 常量和参数回读（白皮书 v1.4 §6.3）----
         require(pm.VOTER_NUM() == 2, "V: voterNum");
         require(pm.VOTER_DEN() == 3, "V: voterDen");
         require(pm.FEE_BPS() == 50, "V: feeBps");

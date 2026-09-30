@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 /// @title NetBuilder（测试辅助）
 /// @notice 逐项镜像 `gatelang/src/netlist.rs` 的 NAND 原语展开
 ///         （NOT=1 / AND=2 / OR=3 / XOR=4 / 全加器=15），
-///         用于在测试中构造与 GateLang 编译产物同构的扁平网表，喂给链上门级引擎。
+///         用于在测试中构造与 GateLang 编译产物同构的扁平逻辑原语 IR，喂给链上逻辑原语引擎。
 ///         信号编号约定：`0..nIn-1` 为主输入，`nIn..nIn+nLatch-1` 为 LATCH 状态位，
 ///         其后每个 NAND/常量门按拓扑序逐个占用一个信号下标。
 library NB {
@@ -94,7 +94,7 @@ library NB {
         }
     }
 
-    /* ---------- 现成电路 ---------- */
+    /* ---------- 现成逻辑模块 ---------- */
 
     /// 4 位加法器：输入 a0..a3(sig0..3), b0..b3(sig4..7)；输出 [sum0..sum3, cout]。
     /// 61 门（60 NAND + 1 const）/ 深度 19（与 gatelang adder4 一致）。

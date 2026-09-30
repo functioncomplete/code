@@ -10,11 +10,11 @@ interface IContainerOwner {
 }
 
 /// @title CSC — Compressed State Commitment
-/// @notice FCT state component (whitepaper v1.3 §5.2–5.3).
+/// @notice FCT state component (whitepaper v1.4 §5.2–5.3).
 ///         - One sparse binary Merkle tree commits ALL container state
 ///           (current root); leaves are indexed by container ID, not address.
 ///         - History is the same tree's root snapshotted per epoch (unified
-///           history + extended tree per the v1.3 optimization).
+///           history + extended tree per the v1.4 optimization).
 ///         - Hot/cold separation: hot states stay fully accessible; cold
 ///           states (rent unpaid / evicted) keep only their commitment leaf
 ///           on-chain, with full data managed by off-chain state slices.

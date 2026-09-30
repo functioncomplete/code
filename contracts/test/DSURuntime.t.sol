@@ -6,7 +6,7 @@ import { DSU } from "../src/DSU.sol";
 import { DSURuntime } from "../src/DSURuntime.sol";
 import { IDSUImpl } from "../src/interfaces/IDSUImpl.sol";
 
-/// @title DSURuntime.t — DSU 执行引擎（whitepaper v1.3 §4.2，DSU 交付）
+/// @title DSURuntime.t — DSU 执行引擎（whitepaper v1.4 §4.2，DSU 交付）
 contract DSURuntimeTest is Test {
     DSU internal dsu;
     DSURuntime internal rt;

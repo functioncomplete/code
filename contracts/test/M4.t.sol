@@ -152,7 +152,7 @@ contract IdentityRegistryTest is Test {
     }
 
     function testProofHashBoundToIdentity() public {
-        // v1.3 §3.4/§6.4：形式化验证证明（spec/gateproof）须与身份绑定，可先验证
+        // v1.4 §3.4/§6.4：形式化验证证明（spec/gateproof）须与身份绑定，可先验证
         bytes32 gproof = keccak256("gateproof-v1");
         reg.registerGate(netHashA, ioSpec, 36, 9, 250, makeAddr("creator"), gproof);
         assertEq(reg.gateProofOf(netHashA), gproof);
@@ -274,7 +274,7 @@ contract PrimitiveSelectorTest is Test {
     }
 
     function testCrossChainGateWinsOverPerfOnly() public {
-        // 需要跨链身份（如公共函数库）即使高性能也走门级
+        // 需要跨链身份（如公共函数库）即使高性能也走逻辑原语
         PrimitiveSelector.Recommendation memory rec = sel.recommend(
             PrimitiveSelector.Requirements(false, true, true, false)
         );

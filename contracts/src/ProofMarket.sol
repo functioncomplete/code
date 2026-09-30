@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /// @title ProofMarket
-/// @notice FCT v2 M3 证明市场（whitepaper v1.3 §6.2–6.3, dev-plan §5.3）。
+/// @notice FCT v2 M3 证明市场（whitepaper v1.4 §6.2–6.3, dev-plan §5.3）。
 ///         Prover 生成执行证明 → 验证者投票（>2/3 达到最终性）→ 结算。
 ///         无效证明罚没保证金，证明者永久失去资格；验证者获得手续费分成。
 /// @dev 原型聚焦结算时序与质押经济，不绑定具体密码学：
@@ -10,7 +10,7 @@ pragma solidity ^0.8.24;
 ///      任务标记 REPLAY / ZK / TEE 路径，验证者可插拨。
 contract ProofMarket {
     /* ===================== 常量 ===================== */
-    /// @notice 2/3 验证者多数（白皮书 v1.3 §6.3 最终性 >2/3 确认）。
+    /// @notice 2/3 验证者多数（白皮书 v1.4 §6.3 最终性 >2/3 确认）。
     uint256 public constant VOTER_NUM = 2;
     uint256 public constant VOTER_DEN = 3;
     /// @notice 结算手续费 0.5%（分给投 accept 的验证者）。
@@ -41,7 +41,7 @@ contract ProofMarket {
 
     struct Task {
         uint256 containerId; // 关联容器（0 = 与容器无关的公开计算）
-        uint256 functionId; // 门级函数 / DSU 版本哈希
+        uint256 functionId; // 逻辑原语函数 / DSU 版本哈希
         ProofPath path;
         bytes32 inputHash; // 任务定义输入
         bytes32 outputHash; // 期望输出；0 = 未知，由验证者判定

@@ -7,7 +7,7 @@ import {ContainerNFT} from "../src/ContainerNFT.sol";
 
 /// @notice v2 M2 CSC 组件部署脚本（Sepolia）
 /// @dev 部署 CSC（压缩状态承诺：二进制 Merkle 树 + 状态租金）。
-///      原型参数（白皮书 v1.3 §5.2–5.3 无固定数值，取原合理值）：
+///      原型参数（白皮书 v1.4 §5.2–5.3 无固定数值，取原合理值）：
 ///        depth=32     -> 2^32 容器（Container ID 上限）
 ///        epochLen=3600-> 1 小时分区
 ///        maxHot=100000-> 热状态容量上限（利用率定价基准）

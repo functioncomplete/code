@@ -5,15 +5,15 @@ import { NandGateLib } from "./lib/NandGateLib.sol";
 
 /// @title HybridGate
 /// @notice FCT v2 M6 混合模式编排（whitepaper §4.3.3, dev-plan §5.4）。
-///         证明链：DSU 执行 → 生成证明 → 门级验证函数验证证明 → 状态管理器更新容器。
+///         证明链：DSU 执行 → 生成证明 → 逻辑原语验证函数验证证明 → 状态管理器更新容器。
 ///         - DSU 作为"执行引擎"（高性能计算，步骤数由 DSU.consumeSteps 计量）
-///         - 门级函数作为"验证锚"（NAND 网络链上重放，模块级验证粒度）
-///         - 验证通过 → 更新容器状态（interfaceId → value + 门级锚记）
+///         - 逻辑原语函数作为"验证锚"（NAND 网络链上重放，模块级验证粒度）
+///         - 验证通过 → 更新容器状态（interfaceId → value + 逻辑原语锚记）
 ///         - 验证失败 → 罚没证明者质押（混合模式相对纯 DSU 的安全增益演示）
 contract HybridGate {
     using NandGateLib for uint256;
 
-    /* ===================== 常量：门级验证模块 ===================== */
+    /* ===================== 常量：逻辑原语验证模块 ===================== */
     uint8 public constant MODULE_ADD4 = 1; // 4-bit 加法器：60 门 / 深度 19
     uint8 public constant MODULE_CMP4 = 2; // 4-bit 比较器：58 门 / 深度 20
 
@@ -21,9 +21,9 @@ contract HybridGate {
     enum Status { REQUESTED, DSU_EXECUTED, VERIFIED, REJECTED }
 
     struct ExecRequest {
-        bytes32 gateId; // 门级验证函数身份（IdentityRegistry 登记的网络哈希）
+        bytes32 gateId; // 逻辑原语验证函数身份（IdentityRegistry 登记的网络哈希）
         bytes32 dsuId; // DSU 执行引擎身份
-        uint8 module; // 门级模块（MODULE_ADD4 / MODULE_CMP4）
+        uint8 module; // 逻辑原语模块（MODULE_ADD4 / MODULE_CMP4）
         uint16 inputA; // 执行输入
         uint16 inputB;
         uint16 dsuResult; // DSU 输出
@@ -37,7 +37,7 @@ contract HybridGate {
     /* ===================== 状态管理器（容器接口） ===================== */
     struct ContainerSlot {
         uint16 value; // 最新已验证值
-        bytes32 gateId; // 门级验证锚
+        bytes32 gateId; // 逻辑原语验证锚
         uint32 verifiedAt;
     }
 
@@ -45,7 +45,7 @@ contract HybridGate {
     mapping(bytes32 => ContainerSlot) public container; // interfaceId -> 状态槽
     uint64 public nextReqId;
 
-    // 门级验证函数登记（门模块 -> 是否启用 + 登记身份）
+    // 逻辑原语验证函数登记（门模块 -> 是否启用 + 登记身份）
     mapping(uint8 => bool) public gateModules;
     mapping(uint8 => bytes32) public moduleGateId;
 
@@ -66,9 +66,9 @@ contract HybridGate {
         owner = msg.sender;
     }
 
-    /* ===================== 门级模块登记 ===================== */
+    /* ===================== 逻辑原语模块登记 ===================== */
 
-    /// @notice 登记门级验证模块（门模块 → 身份锚）。owner 校验模块门数与白皮书/gatelang 一致。
+    /// @notice 登记逻辑原语验证模块（门模块 → 身份锚）。owner 校验模块门数与白皮书/gatelang 一致。
     function registerModule(uint8 module, bytes32 gateId, uint32 expectedGates, uint32 expectedDepth) external onlyOwner {
         require(module == MODULE_ADD4 || module == MODULE_CMP4, "bad module");
         require(gateId != bytes32(0), "gateId 0");
@@ -122,8 +122,8 @@ contract HybridGate {
         emit DsuOutputSubmitted(reqId, result, steps);
     }
 
-    /// @notice 阶段 3：门级验证锚重放 → 通过则更新容器状态，失败则罚没。
-    ///         门级重放为模块级验证（whitepaper §4.3.3：验证粒度是模块级，而非逐门级）。    
+    /// @notice 阶段 3：逻辑原语验证锚重放 → 通过则更新容器状态，失败则罚没。
+    ///         逻辑原语重放为模块级验证（whitepaper §4.3.3：验证粒度是模块级，而非逐逻辑原语）。    
     function verifyByGate(uint64 reqId) external {
         ExecRequest storage r = requests[reqId];
         require(r.status == Status.DSU_EXECUTED, "not executed");
@@ -162,7 +162,7 @@ contract HybridGate {
         }
     }
 
-    /// @notice 门级模块求值：返回 (主值, 附加)。ADD4: (sum, cout)；CMP4: (eq, gt)。
+    /// @notice 逻辑原语模块求值：返回 (主值, 附加)。ADD4: (sum, cout)；CMP4: (eq, gt)。
     function _moduleEval(uint8 module, uint16 a, uint16 b) internal pure returns (uint16, uint16) {
         if (module == MODULE_ADD4) {
             (uint256 sum, uint256 cout) = NandGateLib.add4(a, b);
@@ -173,7 +173,7 @@ contract HybridGate {
         }
     }
 
-    /// @notice 公开门级直查（无状态变更）：对给定输入算门级模块结果，供链上复核。
+    /// @notice 公开逻辑原语直查（无状态变更）：对给定输入算逻辑原语模块结果，供链上复核。
     function gateEval(uint8 module, uint16 a, uint16 b) external pure returns (uint16 main, uint16 extra) {
         return _moduleEval(module, a, b);
     }
@@ -188,7 +188,7 @@ contract HybridGate {
         return container[interfaceId].value;
     }
 
-    /// @notice 门级资源说明（与 GateLang 网表对照）。
+    /// @notice 逻辑原语资源说明（与 GateLang 逻辑原语 IR 对照）。
     function gateNotes(uint8 module) external pure returns (uint32 gates_, uint32 depth_) {
         if (module == MODULE_ADD4) return (60, 19);
         return (58, 20);

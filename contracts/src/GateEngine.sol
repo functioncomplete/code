@@ -2,14 +2,14 @@
 pragma solidity ^0.8.24;
 
 /// @title GateEngine
-/// @notice FCT v2 门级引擎（whitepaper v1.3 §4.1 / dev-plan §5.2）——M5 交付。
+/// @notice FCT v2 逻辑原语引擎（whitepaper v1.4 §4.1 / dev-plan §5.2）——M5 交付。
 ///
-///         语义：链上**通用** NAND/LATCH 网表的登记、校验与求值。
-///         门级函数 = 输入引线（signal 0..I-1） + LATCH 状态位（signal I..I+L-1）
+///         语义：链上**通用** NAND/LATCH 逻辑原语 IR 的登记、校验与求值。
+///         逻辑原语函数 = 输入引线（signal 0..I-1） + LATCH 状态位（signal I..I+L-1）
 ///         + 门（signal I+L..S-1，按拓扑序逐个定义）。
 ///
 ///         与 GateLang 编译产物（`gatelang --fct` 的 `gate_ir/*.json`）对齐：
-///         - 扁平网表：无环、拓扑序（门的操作数下标严格小于自身下标 → 结构上不可能成环）
+///         - 扁平逻辑原语 IR：无环、拓扑序（门的操作数下标严格小于自身下标 → 结构上不可能成环）
 ///         - 门原语只有 NAND 与常量（NOT/AND/OR/XOR 等在编译期已全部展开为 NAND）
 ///         - LATCH 以"状态位"表达：本次求值读入当前状态，输出下一状态（与 fct.rs
 ///           "latch 以输入形式表达" 的导出方式一致）
@@ -99,7 +99,7 @@ contract GateEngine {
     }
 
     /* ============================ 登记 ============================ */
-    /// @notice 登记一个门级函数程序。
+    /// @notice 登记一个逻辑原语函数程序。
     /// @param inputCount   主输入位数 I（signal 0..I-1）
     /// @param latchCount   LATCH 状态位数 L（signal I..I+L-1）
     /// @param program      门列表（signal I+L..S-1 逐个定义），打包 op(8)|l(12)|r(12)

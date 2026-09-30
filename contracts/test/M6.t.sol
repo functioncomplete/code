@@ -41,7 +41,7 @@ contract M6HybridTest is Test {
         vm.stopPrank();
     }
 
-    /* ============ 门级原语库单元验证 ============ */
+    /* ============ 逻辑原语原语库单元验证 ============ */
 
     function test_halfAdder5nand_truthTable() public view {
         (uint256 s, uint256 c) = NandGateLib.halfAdd(0, 0);
@@ -87,7 +87,7 @@ contract M6HybridTest is Test {
     }
 
     function test_add4_gateEval_allInputs() public view {
-        // 穷举 16×16=256：验证门级加法器等价 uint 运算（60 门模块）
+        // 穷举 16×16=256：验证逻辑原语加法器等价 uint 运算（60 门模块）
         for (uint256 a = 0; a < 16; a++) {
             for (uint256 b = 0; b < 16; b++) {
                 (uint256 sum, uint256 cout) = NandGateLib.add4(a, b);
@@ -109,7 +109,7 @@ contract M6HybridTest is Test {
         assertEq(gt, 0);
     }
 
-    /* ============ 门级资源说明 ============ */
+    /* ============ 逻辑原语资源说明 ============ */
 
     function test_gateNotes_matchGatelang() public view {
         (uint32 g, uint32 d) = hg.gateNotes(hg.MODULE_ADD4());
@@ -141,7 +141,7 @@ contract M6HybridTest is Test {
         hg.submitDsuOutputV2(req, 12, 64);
         assertEq(uint8(hg.requestStatus(req)), uint8(HybridGate.Status.DSU_EXECUTED));
 
-        // 门级验证锚 + 状态管理器更新
+        // 逻辑原语验证锚 + 状态管理器更新
         hg.verifyByGate(req);
         assertEq(uint8(hg.requestStatus(req)), uint8(HybridGate.Status.VERIFIED));
         bytes32 interfaceId = keccak256(abi.encode(MOD_ADD4, uint16(5), uint16(7)));
@@ -153,7 +153,7 @@ contract M6HybridTest is Test {
         hg.submitDsuOutputV2(req, 15, 64); // 错误输出（真值 13）
 
         uint256 bountyBefore = address(this).balance;
-        hg.verifyByGate(req); // 门级重放 = 13 ≠ 15 → REJECTED
+        hg.verifyByGate(req); // 逻辑原语重放 = 13 ≠ 15 → REJECTED
         assertEq(uint8(hg.requestStatus(req)), uint8(HybridGate.Status.REJECTED));
         // 罚没 50% 给验证者（address(this)）
         assertEq(address(this).balance - bountyBefore, 0.5 ether, "slash 50%");

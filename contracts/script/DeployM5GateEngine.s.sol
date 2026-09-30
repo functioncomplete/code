@@ -9,7 +9,7 @@ import { HybridChain } from "../src/HybridChain.sol";
 import { DSU } from "../src/DSU.sol";
 import { NB } from "../test/helpers/NetBuilder.sol";
 
-/// @title DeployM5 — 门级引擎 + DSU 执行引擎 + 混合链的 Sepolia 部署
+/// @title DeployM5 — 逻辑原语引擎 + DSU 执行引擎 + 混合链的 Sepolia 部署
 /// @notice 复用 M4 的 DSU 登记（owner = 部署账户），新增本次三个合约并端到端自证。
 /// 用法（目标机）：
 ///   export PATH="$HOME/.foundry/bin:$PATH"; set -a; . ~/.fct-sepolia.env; set +a
@@ -26,7 +26,7 @@ contract DeployM5 is Script {
         DSURuntime rt = new DSURuntime(DSU(dsuAddr));
         HybridChain hc = new HybridChain(ge, rt);
 
-        // 登记与 gatelang adder4 同构的 ADD4 网表（60 NAND / 深度 19）
+        // 登记与 gatelang adder4 同构的 ADD4 逻辑原语 IR （60 NAND / 深度 19）
         (uint32[] memory prog, uint16[] memory outs, uint16[] memory nexts, uint32 depth) = NB.buildAdd4();
         bytes32 fnId = ge.registerFunction(8, 0, prog, outs, nexts, depth);
 
@@ -35,7 +35,7 @@ contract DeployM5 is Script {
             DSU.DSUType.ARITH, keccak256("arith-ref-v1"), keccak256("mod16"), bytes32(0), address(0), 1000
         );
 
-        // 端到端自证：5 + 4 → 门级 9、DSU 9 → VERIFIED 且写入状态槽
+        // 端到端自证：5 + 4 → 逻辑原语 9、DSU 9 → VERIFIED 且写入状态槽
         uint256 inBits = uint256(5) | (uint256(4) << 4);
         bytes memory dsuInput =
             abi.encodePacked(uint8(0), bytes32(uint256(5)), bytes32(uint256(4)), bytes32(uint256(16)));

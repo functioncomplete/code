@@ -5,7 +5,7 @@ import {DSU} from "./DSU.sol";
 import {IDSUImpl} from "./interfaces/IDSUImpl.sol";
 
 /// @title DSURuntime
-/// @notice FCT v2 DSU 执行引擎（whitepaper v1.3 §4.2 / dev-plan §5.3）——DSU 交付。
+/// @notice FCT v2 DSU 执行引擎（whitepaper v1.4 §4.2 / dev-plan §5.3）——DSU 交付。
 ///
 ///         `DSU.sol` 承载**身份与预算**（类别 + 版本 + 参数 + 模型 → dsuId，maxSteps）；
 ///         本合约承载**执行**：按类别运行参考实现，并做**真实步数计量**

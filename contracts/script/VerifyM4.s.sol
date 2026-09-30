@@ -8,7 +8,7 @@ import {PrimitiveSelector} from "../src/PrimitiveSelector.sol";
 
 /// @notice M4 共享层链上验证：
 ///   DSU：注册哈希 DSU（真实交易）+ 步数预算消费
-///   身份：登记门级函数（真实交易）+ 登记 DSU 身份（真实交易）+ 依赖图链接（真实交易）
+///   身份：登记逻辑原语函数（真实交易）+ 登记 DSU 身份（真实交易）+ 依赖图链接（真实交易）
 ///   选择器：8 个官方规则样本只读断言
 contract VerifyM4 is Script {
     DSU internal dsu;
@@ -40,7 +40,7 @@ contract VerifyM4 is Script {
         console2.log(">> DSU register =>", Lib.toString(dsuId));
         dsu.consumeSteps(dsuId, 256);
 
-        // 2) 门级函数身份登记（NAND 网络哈希）
+        // 2) 逻辑原语函数身份登记（NAND 网络哈希）
         bytes32 gId = reg.registerGate(netHashA, ioSpec, 36, 9, 250, vm.addr(pk), keccak256("gateproof"));
         console2.log(">> Gate register =>", Lib.toString(gId));
 
@@ -48,7 +48,7 @@ contract VerifyM4 is Script {
         bytes32 idDsu = reg.registerDSU(DSU.DSUType.HASH, dsuVh, dsuVh, model0, 120, vm.addr(pk), keccak256("dsuproof"));
         console2.log(">> DSU identity register =>", Lib.toString(idDsu));
 
-        // 4) 依赖图：门级函数依赖 DSU（组合版税 40%）
+        // 4) 依赖图：逻辑原语函数依赖 DSU（组合版税 40%）
         reg.linkDependency(gId, idDsu, 4000);
         console2.log(">> dependency linked (gate -> dsu, 4000bps)");
 
@@ -64,7 +64,7 @@ contract VerifyM4 is Script {
         require(reg.identityKind(gId) == 1, "gate kind");
         require(reg.identityKind(idDsu) == 2, "dsu kind");
 
-        // v1.3 §3.4/§6.4：形式化验证证明已与身份绑定（可在调用前校验）
+        // v1.4 §3.4/§6.4：形式化验证证明已与身份绑定（可在调用前校验）
         require(reg.gateProofOf(gId) == keccak256("gateproof"), "gate proof bound");
         require(reg.dsuProofOf(idDsu) == keccak256("dsuproof"), "dsu proof bound");
 

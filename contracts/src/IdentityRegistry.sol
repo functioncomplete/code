@@ -4,15 +4,15 @@ pragma solidity ^0.8.24;
 import {DSU} from "./DSU.sol";
 
 /// @title IdentityRegistry
-/// @notice FCT v2 M4 双原语身份登记（whitepaper v1.3 §8.2, dev-plan §5.3, ARCHITECTURE §4）。
-///         门级函数身份 = NAND 网络哈希（跨链天然唯一）；DSU 身份 = 版本+参数+模型。
+/// @notice FCT v2 M4 双原语身份登记（whitepaper v1.4 §8.2, dev-plan §5.3, ARCHITECTURE §4）。
+///         逻辑原语函数身份 = NAND 网络哈希（跨链天然唯一）；DSU 身份 = 版本+参数+模型。
 ///         显式依赖图登记（结构性组合 + 组合版税按引用关系分配）。
 contract IdentityRegistry {
-    /* ===================== 门级函数身份 ===================== */
+    /* ===================== 逻辑原语函数身份 ===================== */
     struct GateIdentity {
         bytes32 networkHash; // NAND 网络完整哈希（跨链身份锚）
         bytes32 ioSpec; // 输入/输出接口哈希
-        bytes32 proofHash; // 形式化验证证明哈希（GateLang spec/gateproof，v1.3 §3.4/§6.4）
+        bytes32 proofHash; // 形式化验证证明哈希（GateLang spec/gateproof，v1.4 §3.4/§6.4）
         uint32 gateCount; // 资源：门数
         uint32 depth; // 资源：逻辑深度
         uint16 royaltyBps; // 版税参数（0..10000）
@@ -26,7 +26,7 @@ contract IdentityRegistry {
         bytes32 versionHash; // 实现版本
         bytes32 paramsHash; // 参数（固定精度/域参数）
         bytes32 modelCID; // 模型 CID（非 ML 为 0）
-        bytes32 proofHash; // 形式化验证证明哈希（spec/gateproof，v1.3 §6.4）
+        bytes32 proofHash; // 形式化验证证明哈希（spec/gateproof，v1.4 §6.4）
         uint16 royaltyBps;
         address owner;
         bool active;
@@ -40,7 +40,7 @@ contract IdentityRegistry {
         bool active;
     }
 
-    mapping(bytes32 => GateIdentity) public gates; // networkHash -> 门级身份
+    mapping(bytes32 => GateIdentity) public gates; // networkHash -> 逻辑原语身份
     mapping(bytes32 => DSUIdentity) public dsus; // dsuId -> DSU 身份
     mapping(bytes32 => Dependency[]) public deps; // 依赖方 identityHash -> 依赖列表
     address public immutable owner;
@@ -61,7 +61,7 @@ contract IdentityRegistry {
         owner = msg.sender;
     }
 
-    /* ===================== 门级函数登记 ===================== */
+    /* ===================== 逻辑原语函数登记 ===================== */
 
     function registerGate(
         bytes32 networkHash,
@@ -76,7 +76,7 @@ contract IdentityRegistry {
         require(ioSpec != bytes32(0), "io 0");
         require(!gates[networkHash].active, "dup gate");
         require(gateCount > 0 && royaltyBps <= 10000, "bad params");
-        // v1.3 §3.4：注册身份必须携带形式化验证证明（区别于"未验证"）
+        // v1.4 §3.4：注册身份必须携带形式化验证证明（区别于"未验证"）
         require(proofHash != bytes32(0), "proof 0");
         gates[networkHash] = GateIdentity({
             networkHash: networkHash,
@@ -125,7 +125,7 @@ contract IdentityRegistry {
 
     /* ===================== 依赖图（结构性组合） ===================== */
 
-    /// @notice 登记 parent 依赖 child 的引用关系（任意门级函数 <-> DSU，支持混合依赖）。
+    /// @notice 登记 parent 依赖 child 的引用关系（任意逻辑原语函数 <-> DSU，支持混合依赖）。
     function linkDependency(bytes32 parentId, bytes32 childId, uint16 shareBps) external onlyOwner {
         require(_known(parentId), "unknown parent");
         require(_known(childId), "unknown child");
@@ -174,7 +174,7 @@ contract IdentityRegistry {
         return (d.active, d.owner, d.royaltyBps);
     }
 
-    /// @notice 形式化验证证明哈希（v1.3 §3.4/§6.4）：调用者可在调用前校验。
+    /// @notice 形式化验证证明哈希（v1.4 §3.4/§6.4）：调用者可在调用前校验。
     ///         未知身份 revert（区别于"已注册但证明为 0"）。
     function gateProofOf(bytes32 networkHash) external view returns (bytes32) {
         require(gates[networkHash].active, "unknown gate");
@@ -203,7 +203,7 @@ contract IdentityRegistry {
         return gates[id].active || dsus[id].active;
     }
 
-    /// @notice 跨链身份锚（whitepaper v1.3 §8.2）：门级网络哈希可直接跨链一致解析；
+    /// @notice 跨链身份锚（whitepaper v1.4 §8.2）：逻辑原语网络哈希可直接跨链一致解析；
     ///         DSU 需版本+参数+模型共同锚定。返回身份类型编码 1=gate 2=dsu 0=unknown。
     function identityKind(bytes32 id) external view returns (uint8) {
         if (gates[id].active) return 1;

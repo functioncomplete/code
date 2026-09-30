@@ -6,8 +6,8 @@ import { console2 } from "forge-std/console2.sol";
 import { HybridGate } from "../src/HybridGate.sol";
 
 /// @title DeployM6 — M6 混合模式（HybridGate）的 Sepolia 部署
-/// @notice DSU 执行 → 门级验证锚重放 → 容器状态更新/罚没 的乐观证明链。
-///         gateId 直接复用 M5 门级引擎登记的 ADD4 `fnId`，把 M6 与 M5 的身份锚绑定。
+/// @notice DSU 执行 → 逻辑原语验证锚重放 → 容器状态更新/罚没 的乐观证明链。
+///         gateId 直接复用 M5 逻辑原语引擎登记的 ADD4 `fnId`，把 M6 与 M5 的身份锚绑定。
 /// 用法（目标机）：
 ///   export PATH="$HOME/.foundry/bin:$PATH"; set -a; . ~/.fct-sepolia.env; set +a
 ///   M5_FN_ID=0x3318... forge script script/DeployM6HybridGate.s.sol \
@@ -33,7 +33,7 @@ contract DeployM6 is Script {
         hg.registerModule(MODULE_ADD4, add4GateId, 60, 19);
         hg.registerModule(MODULE_CMP4, cmp4GateId, 58, 20);
 
-        // 正例：5 + 4 → DSU 提交 9 → 门级重放 9 → VERIFIED
+        // 正例：5 + 4 → DSU 提交 9 → 逻辑原语重放 9 → VERIFIED
         uint64 okReq = hg.createRequest{ value: 0.0005 ether }(add4GateId, dsuId, MODULE_ADD4, 5, 4);
         hg.submitDsuOutputV2(okReq, 9, 1);
         hg.verifyByGate(okReq);
@@ -45,7 +45,7 @@ contract DeployM6 is Script {
         hg.verifyByGate(badReq);
         require(hg.requestStatus(badReq) == HybridGate.Status.REJECTED, "expected REJECTED");
 
-        // 门级直查交叉验证
+        // 逻辑原语直查交叉验证
         (uint16 gv,) = hg.gateEval(MODULE_ADD4, 5, 4);
         require(gv == 9, "gate eval");
 

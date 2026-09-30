@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 /// @title PrimitiveSelector
 /// @notice FCT v2 M4 原语选择器（whitepaper §4.3.4, dev-plan §5.3）。
-///         容器/目标链按场景需求选择：门级函数 / DSU / 混合模式。
+///         容器/目标链按场景需求选择：逻辑原语函数 / DSU / 混合模式。
 ///         决策规则表（白皮书 §4.3.4 场景 → 原语）编码为确定性纯函数。
 contract PrimitiveSelector {
     enum Primitive { GATE, DSU, HYBRID }
@@ -24,7 +24,7 @@ contract PrimitiveSelector {
     /// @notice 决策规则表（白皮书 §4.3.4）：
     ///   formal || xchain || !high && !gov        → GATE   （极致安全/跨链身份/公共函数库）
     ///   gov && (formal || perf)                  → HYBRID （RWA 合规、AI Agent、混合场景）
-    ///   highPerf && gov                          → HYBRID （门级身份 + DSU 执行）
+    ///   highPerf && gov                          → HYBRID （逻辑原语身份 + DSU 执行）
     ///   highPerf                                 → DSU    （AI 推理/密码学/批量计算/小额高频）
     ///   default                                  → GATE   （安全优先默认）
     function recommend(Requirements memory r) public pure returns (Recommendation memory rec) {
@@ -34,7 +34,7 @@ contract PrimitiveSelector {
         bool xchain = r.needCrossChainId;
 
         if (gov && (formal || perf)) {
-            // 混合：门级验证锚 + DSU 执行（whitepaper §4.3.3）
+            // 混合：逻辑原语验证锚 + DSU 执行（whitepaper §4.3.3）
             rec.primitive = Primitive.HYBRID;
             rec.confidence = 100;
             rec.reason = keccak256("RWA-AI-hybrid");
@@ -53,13 +53,13 @@ contract PrimitiveSelector {
             return rec;
         }
         if (formal || xchain) {
-            // 极致安全、跨链身份、形式化验证、公共函数库 → 门级函数
+            // 极致安全、跨链身份、形式化验证、公共函数库 → 逻辑原语函数
             rec.primitive = Primitive.GATE;
             rec.confidence = 100;
             rec.reason = keccak256("formal-crosschain-gate");
             return rec;
         }
-        // 默认：门级安全优先
+        // 默认：逻辑原语安全优先
         rec.primitive = Primitive.GATE;
         rec.confidence = 60;
         rec.reason = keccak256("safe-default-gate");
@@ -74,7 +74,7 @@ contract PrimitiveSelector {
             return (r, Primitive.DSU);
         }
         if (idx == 1) {
-            // 极致安全场景 → 门级函数
+            // 极致安全场景 → 逻辑原语函数
             r = Requirements({ needFormalProof: true, needCrossChainId: false, needHighPerf: false, needGovernedState: false });
             return (r, Primitive.GATE);
         }
@@ -89,7 +89,7 @@ contract PrimitiveSelector {
             return (r, Primitive.HYBRID);
         }
         if (idx == 4) {
-            // 公共函数库 → 门级函数
+            // 公共函数库 → 逻辑原语函数
             r = Requirements({ needFormalProof: false, needCrossChainId: true, needHighPerf: false, needGovernedState: false });
             return (r, Primitive.GATE);
         }
@@ -104,11 +104,11 @@ contract PrimitiveSelector {
             return (r, Primitive.DSU);
         }
         if (idx == 7) {
-            // 跨链身份 → 门级函数
+            // 跨链身份 → 逻辑原语函数
             r = Requirements({ needFormalProof: false, needCrossChainId: true, needHighPerf: false, needGovernedState: false });
             return (r, Primitive.GATE);
         }
-        // 兜底：默认门级
+        // 兜底：默认逻辑原语
         r = Requirements({ needFormalProof: false, needCrossChainId: false, needHighPerf: false, needGovernedState: false });
         return (r, Primitive.GATE);
     }

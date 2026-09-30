@@ -8,14 +8,14 @@ import { GateEngine } from "../src/GateEngine.sol";
 import { HybridChain } from "../src/HybridChain.sol";
 import { NB } from "./helpers/NetBuilder.sol";
 
-/// @title HybridChain.t — 门级引擎 × DSU 的零信任合流（whitepaper v1.3 §4.3.3）
+/// @title HybridChain.t — 逻辑原语引擎 × DSU 的零信任合流（whitepaper v1.4 §4.3.3）
 contract HybridChainTest is Test {
     DSU internal dsu;
     DSURuntime internal rt;
     GateEngine internal ge;
     HybridChain internal hc;
 
-    bytes32 internal fnId; // ADD4 门级网表
+    bytes32 internal fnId; // ADD4 逻辑原语 IR
     bytes32 internal toggleId; // 时序：1 位翻转单元
     bytes32 internal arithId; // ARITH mod 16
     bytes32 internal mlId; // ML（用于验证 decode fail-closed）
@@ -28,7 +28,7 @@ contract HybridChainTest is Test {
         ge = new GateEngine();
         hc = new HybridChain(ge, rt);
 
-        // 门级锚：与 gatelang adder4 同构的 60 门 NAND 网表
+        // 逻辑原语锚：与 gatelang adder4 同构的 60 门 NAND 逻辑原语 IR
         (uint32[] memory prog, uint16[] memory outs, uint16[] memory nexts, uint32 depth) = NB.buildAdd4();
         fnId = ge.registerFunction(8, 0, prog, outs, nexts, depth);
 
@@ -74,7 +74,7 @@ contract HybridChainTest is Test {
         uint8 a = 5;
         uint8 b = 4;
         uint256 inBits = uint256(a) | (uint256(b) << 4);
-        // 模 7：(5+4)%7 = 2 ≠ 门级和 9
+        // 模 7：(5+4)%7 = 2 ≠ 逻辑原语和 9
         (, HybridChain.Status st, uint256 dr, uint256 gr) =
             hc.execute(fnId, arithId, inBits, 0, _arithInput(0, a, b, 7), MASK4);
 
@@ -152,9 +152,9 @@ contract HybridChainTest is Test {
         assertEq(uint256(hc.slotOf(fnId, arithId, inBits, 0, inp, MASK4).at), uint256(firstAt), "timestamp frozen");
     }
 
-    /// 时序网表：stateBits 参与求值与键 → 不同状态是不同语句。
+    /// 时序逻辑原语 IR：stateBits 参与求值与键 → 不同状态是不同语句。
     function test_stateful_slot_depends_on_state() public {
-        // toggle 网表：out = state（mask 取 bit0）。DSU 用 (state, 0, mod16) 对齐。
+        // toggle 逻辑原语 IR：out = state（mask 取 bit0）。DSU 用 (state, 0, mod16) 对齐。
         bytes memory inS0 = _arithInput(0, 0, 0, 16);
         bytes memory inS1 = _arithInput(0, 1, 0, 16);
 
@@ -170,7 +170,7 @@ contract HybridChainTest is Test {
         assertTrue(hc.slotOf(toggleId, arithId, 0, 1, inS1, 1).set, "state1 slot");
     }
 
-    /* ==================== 穷举：4 位域上 DSU 与门级网表恒等 ==================== */
+    /* ==================== 穷举：4 位域上 DSU 与逻辑原语 IR 恒等 ==================== */
 
     function testFuzz_add4_chain_always_agrees(uint8 a, uint8 b) public {
         a &= 0x0F;

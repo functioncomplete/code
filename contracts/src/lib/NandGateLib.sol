@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 /// @title NandGateLib
-/// @notice M6 门级原语库（whitepaper v1.3 §4.3.3 混合模式 / dev-plan §5.4）。
-///         与 GateLang 网表门数一致：NOT=1 AND=2 OR=3 XOR=4(深度3)，
+/// @notice M6 逻辑原语原语库（whitepaper v1.4 §4.3.3 混合模式 / dev-plan §5.4）。
+///         与 GateLang 逻辑原语 IR 门数一致：NOT=1 AND=2 OR=3 XOR=4(深度3)，
 ///         半加器=5（共享 t=NAND）、全加器=15、4 位加法器=60、4 位比较器=58。
 ///         所有模块由 NAND 组合而成，作为链上"验证锚"。
 library NandGateLib {
@@ -26,7 +26,7 @@ library NandGateLib {
         return _nand(_nand(a, a), _nand(b, b));
     }
 
-    /// @notice 半加器：5 个 NAND（共享 t=NAND(a,b)，GateLang 白皮书 v2.1 §4.2）。
+    /// @notice 半加器：5 个 NAND（共享 t=NAND(a,b)，GateLang 白皮书 v2.2 §4.2）。
     ///         sum=a^b, carry=a&b
     function halfAdd(uint256 a, uint256 b) internal pure returns (uint256 sum, uint256 carry) {
         uint256 t = _nand(a, b); // 1
@@ -58,7 +58,7 @@ library NandGateLib {
         cout = cin;
     }
 
-    /// @notice 4 位比较器：与 GateLang `examples/stdlib_l1.gat` 的 Comparator4 网表对齐
+    /// @notice 4 位比较器：与 GateLang `examples/stdlib_l1.gat` 的 Comparator4 逻辑原语 IR 对齐
     ///         （58 门 / 深度 20，见 gatelang CLI 与集成测试 comparator4_58gates_eq_gt_spec）。
     ///         语义：
     ///           eq = !(d3|d2|d1|d0)

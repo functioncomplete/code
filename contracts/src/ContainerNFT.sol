@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Container} from "./Container.sol";
 
 /// @title ContainerNFT — 容器 NFT（ERC-721）
-/// @notice 一枚容器 NFT 拥有一枚 Container 账户（白皮书 v1.3 §5.1）。mint 时创建
+/// @notice 一枚容器 NFT 拥有一枚 Container 账户（白皮书 v1.4 §5.1）。mint 时创建
 ///         Container 实例并绑定；NFT 转移时调用 Container.onNFTTransfer(newAdmin)，
 ///         容器内资产、服务、管理权、收益随之转移。
 /// @dev 手写最小 ERC-721（零外部依赖，借 1.0 FunctionNFT 模式）。
@@ -119,7 +119,7 @@ contract ContainerNFT {
     }
 
     // ------------------------------------------------------------------
-    // ERC-165 / ERC-721 元数据（白皮书 v1.3 §8.1：以太坊使用 ERC-721 标准）
+    // ERC-165 / ERC-721 元数据（白皮书 v1.4 §8.1：以太坊使用 ERC-721 标准）
     // ------------------------------------------------------------------
     /// @notice ERC-165 接口声明（ERC-165 / ERC-721 / ERC-721Metadata）。
     function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
@@ -165,7 +165,7 @@ contract ContainerNFT {
         _balances[to] += 1;
         _owners[tokenId] = to;
 
-        // 关键联动：容器管理员跟随 NFT 转移（白皮书 v1.3 §5.1）
+        // 关键联动：容器管理员跟随 NFT 转移（白皮书 v1.4 §5.1）
         Container(payable(containerOf[tokenId])).onNFTTransfer(to);
 
         emit Transfer(from, to, tokenId);

@@ -6,7 +6,7 @@ import { GateEngine } from "../src/GateEngine.sol";
 import { NandGateLib } from "../src/lib/NandGateLib.sol";
 import { NB } from "./helpers/NetBuilder.sol";
 
-/// @title GateEngine.t — 门级引擎（whitepaper v1.3 §4.1，M5 交付）
+/// @title GateEngine.t — 逻辑原语引擎（whitepaper v1.4 §4.1，M5 交付）
 contract GateEngineTest is Test {
     GateEngine internal ge;
 
@@ -14,7 +14,7 @@ contract GateEngineTest is Test {
         ge = new GateEngine();
     }
 
-    /* ==================== 网表构造 ==================== */
+    /* ==================== 逻辑原语 IR 构造 ==================== */
 
     /// 4 位加法器：输入 a0..a3, b0..b3（signal 0..7），输出 (sum 4 位, cout)。
     /// 逐位全加器链 → 60 门 / 深度 19（与 gatelang adder4、NandGateLib.add4 一致）。
@@ -112,7 +112,7 @@ contract GateEngineTest is Test {
         ge.registerFunction(8, 0, prog, outs, nexts, depth);
     }
 
-    /* ==================== 等价性：链上引擎 == 门级原语库 ==================== */
+    /* ==================== 等价性：链上引擎 == 逻辑原语原语库 ==================== */
 
     function testFuzz_add4_engine_matches_NandGateLib(uint8 a, uint8 b) public {
         a &= 0x0F;

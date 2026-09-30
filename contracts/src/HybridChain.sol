@@ -5,18 +5,18 @@ import {GateEngine} from "./GateEngine.sol";
 import {DSURuntime} from "./DSURuntime.sol";
 
 /// @title HybridChain
-/// @notice FCT v2 混合模式**信任闭合**集成（whitepaper v1.3 §4.3.3）——门级引擎 + DSU 运行时的合流。
+/// @notice FCT v2 混合模式**信任闭合**集成（whitepaper v1.4 §4.3.3）——逻辑原语引擎 + DSU 运行时的合流。
 ///
 ///         M6 的 `HybridGate` 让证明者**提交** DSU 输出（乐观模型，靠罚没博弈约束）；
 ///         本合约把证明链收进合约内部：
 ///           ① 合约调用 `DSURuntime.execute` 真跑 DSU（参考实现，步数计量）
-///           ② 合约调用 `GateEngine.eval` 做门级网表重放
+///           ② 合约调用 `GateEngine.eval` 做逻辑原语 IR 重放
 ///           ③ 两者一致 → 更新状态槽；不一致 → 记为 REJECTED，不写状态
 ///         因此**无需信任任何外部提交者**：DSU 结果不是"谁说"的，而是合约算出来的。
 ///
-///         适用面：DSU 类别与门级网表在语义上重合的场景（如 4 位加法：ARITH mod 16
-///         对照 ADD4 的 60 门 NAND 网表）。不可门级展开的 DSU（哈希/ML）仍走 M6 的
-///         乐观/ZK/TEE 证明路径 —— 本合约演示的是"可门级展开部分"的零信任收口。
+///         适用面：DSU 类别与逻辑原语 IR 在语义上重合的场景（如 4 位加法：ARITH mod 16
+///         对照 ADD4 的 60 门 NAND 逻辑原语 IR）。不可逻辑原语展开的 DSU（哈希/ML）仍走 M6 的
+///         乐观/ZK/TEE 证明路径 —— 本合约演示的是"可逻辑原语展开部分"的零信任收口。
 ///
 ///         状态槽键绑定**完整语句**（fnId, dsuId, inBits, stateBits, keccak(dsuInput), mask）：
 ///         否则第三方可用 `mask=0` + 退化的 dsuInput 令 `0==0`，为任意 inBits 写入伪造的
@@ -65,12 +65,12 @@ contract HybridChain {
     }
 
     /// @notice 执行一次混合证明链。
-    /// @param fnId      门级验证锚（GateEngine 登记的网表）
+    /// @param fnId      逻辑原语验证锚（GateEngine 登记的逻辑原语 IR）
     /// @param dsuId     DSU 执行引擎（DSURuntime/DSU 登记）
-    /// @param inBits    门级输入位域（ADD4: a | b<<4）
+    /// @param inBits    逻辑原语输入位域（ADD4: a | b<<4）
     /// @param stateBits LATCH 当前状态位域（无时序则 0）
     /// @param dsuInput  DSU 输入字节（ARITH: [op:1][a:32][b:32][mod:32]）
-    /// @param mask      门级输出按位比较掩码（ADD4 取和 → 0x0F）
+    /// @param mask      逻辑原语输出按位比较掩码（ADD4 取和 → 0x0F）
     function execute(
         bytes32 fnId,
         bytes32 dsuId,
@@ -86,7 +86,7 @@ contract HybridChain {
         require(dsuOut.length == 32, "non-word output");
         dsuResult = abi.decode(dsuOut, (uint256));
 
-        // ② 合约内门级重放
+        // ② 合约内逻辑原语重放
         (uint256 gateOut,) = engine.eval(fnId, inBits, stateBits);
         gateResult = gateOut & mask;
 

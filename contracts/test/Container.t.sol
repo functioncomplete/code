@@ -68,7 +68,7 @@ contract ContainerTest is Test {
     }
 
     // ------------------------------------------------------------------
-    // ERC-165 / tokenURI（白皮书 v1.3 §8.1）
+    // ERC-165 / tokenURI（白皮书 v1.4 §8.1）
     // ------------------------------------------------------------------
     function test_erc165_and_tokenURI() public view {
         assertTrue(cNft.supportsInterface(0x01ffc9a7)); // ERC-165
